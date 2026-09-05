@@ -1,0 +1,647 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens, mapped into Tailwind's theme via @theme so both worlds share
+ * one source of truth: `--color-panel` here generates utilities like
+ * `bg-panel`/`text-panel`/`border-panel`, `--font-display` generates
+ * `font-display`, etc. Plain `var(--color-x)` still works too (used below by
+ * the hand-written classes for dynamic/variant styling — see the note in
+ * CLAUDE.md on why those stay outside Tailwind's utility system).
+ */
+@theme {
+  --color-bg: #0f1420;
+  --color-panel: #161d2e;
+  --color-panel-2: #1c2438;
+  --color-text: #e8ecf4;
+  --color-muted: #8b96ad;
+  --color-line: #26304a;
+  --color-accent: #4f8cff;
+  --color-accent-2: #43a047;
+  --color-easy: #2e7d32;
+  --color-med: #f9a825;
+  --color-hard: #c62828;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --font-display: 'Rajdhani', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+/* Kept as a plain custom property too — used in transition: var(--transition)
+   all over the hand-written classes below; Tailwind has no such utility. */
+:root {
+  --transition: 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.status {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-muted);
+}
+.status.error {
+  color: #ff8a80;
+}
+
+/* .app / .topbar / .lang-toggle / .meta-freshness / .filters' own layout are
+   gone — App.jsx now uses Tailwind utilities directly for all of that. What's
+   left below (.filters select, the checkbox-as-toggle-switch) stays hand-written
+   because it overrides native <select>/<input type=checkbox> pseudo-elements
+   (custom arrow image, ::after thumb) — see the note in CLAUDE.md. */
+.filters select,
+.sug-controls select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--color-panel-2);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b96ad' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  color: var(--color-text);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 6px 26px 6px 8px;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.filters select:hover,
+.sug-controls select:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
+}
+.filters select:focus-visible,
+.sug-controls select:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.25);
+}
+.filters label.toggle input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  background: var(--color-panel-2);
+  border: 1px solid var(--color-line);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition), border-color var(--transition);
+}
+.filters label.toggle input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  transition: transform var(--transition), background var(--transition);
+}
+.filters label.toggle input[type='checkbox']:checked {
+  background: var(--color-accent-2);
+  border-color: var(--color-accent-2);
+}
+.filters label.toggle input[type='checkbox']:checked::after {
+  transform: translateX(15px);
+  background: #fff;
+}
+.filters label.toggle input[type='checkbox']:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.3);
+}
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  max-height: 72vh;
+}
+
+table.players {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.players thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-panel-2);
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+  z-index: 1;
+}
+.players th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.players th.sortable:hover {
+  color: var(--color-accent);
+}
+.players .arrow {
+  margin-left: 4px;
+  font-size: 10px;
+}
+.players tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+}
+.players tbody tr:hover {
+  background: rgba(79, 140, 255, 0.08);
+}
+.players td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.players td.name {
+  font-weight: 600;
+}
+.news {
+  color: var(--color-med);
+  cursor: help;
+}
+
+.pos {
+  display: inline-block;
+  min-width: 34px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.pos-1 { background: #37474f; }
+.pos-2 { background: #1565c0; }
+.pos-3 { background: #2e7d32; }
+.pos-4 { background: #c62828; }
+
+/* .fdr-row removed — FdrBadges.jsx uses Tailwind utilities directly for it now. */
+.fdr-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.fdr-easy { background: var(--color-easy); }
+.fdr-med { background: var(--color-med); color: #1a1a1a; }
+.fdr-hard { background: var(--color-hard); }
+
+/* .tabs / .tab removed — App.jsx and SuggestionsView.jsx's pitch-mode toggle
+   now build the same look with Tailwind utilities (see those files). */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Fixture grid */
+.fixture-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+}
+.fixture-grid th,
+.fixture-grid td {
+  padding: 0;
+  text-align: center;
+}
+.fixture-grid .team-col {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+.fixture-grid thead th {
+  font-size: 12px;
+  color: var(--color-muted);
+  padding: 6px 4px;
+  position: relative;
+}
+.fixture-grid thead th.current-gw {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.gw-tag {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+.cell-td {
+  width: 11%;
+  min-width: 84px;
+}
+.cell {
+  border-radius: 6px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 46px;
+  justify-content: center;
+}
+.cell.empty {
+  background: var(--color-panel-2);
+  color: var(--color-muted);
+}
+.cell-opp {
+  font-size: 12px;
+  font-weight: 700;
+}
+.cell-score {
+  font-size: 11px;
+  opacity: 0.85;
+}
+.cell.done {
+  opacity: 0.55;
+}
+
+/* .squad-controls / .squad-meta / .load-btn / .sample-btn / .team-id-help /
+   .team-id-controls removed — every component that used them (TeamIdControls,
+   SquadView, SuggestionsView) now uses Tailwind utility classes directly. */
+.group-head td {
+  background: var(--color-panel-2);
+  color: var(--color-muted);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+}
+tr.bench td {
+  opacity: 0.75;
+}
+.gw-pts {
+  font-weight: 700;
+  color: var(--color-accent);
+}
+.badge {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 4px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.badge.cap {
+  background: #ffd54f;
+  color: #1a1a1a;
+}
+.badge.vice {
+  background: #90a4ae;
+  color: #1a1a1a;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.legend {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+/* ---- Phase 4: Suggestions ---- */
+/* .suggestions-view / .sug-section / .sug-head / .weights-echo / .sug-controls
+   (own layout) / .sug-note removed — SuggestionsView.jsx now uses Tailwind
+   utilities directly. `.sug-controls` itself stays as a class name only,
+   because `.filters select, .sug-controls select` (above) still needs it to
+   scope the custom <select> arrow. */
+table.sug td.rank {
+  color: var(--color-muted);
+  font-weight: 700;
+}
+tr.top-pick td {
+  background: rgba(255, 213, 79, 0.08);
+}
+tr.top-pick td.name {
+  font-weight: 700;
+}
+tr.breakdown-row td {
+  padding-top: 0;
+  padding-bottom: 10px;
+  background: var(--color-panel-2);
+}
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 4px 14px 0 0;
+  padding: 3px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--color-panel);
+}
+.chip-label {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.chip-vals {
+  color: var(--color-text);
+}
+.chip-pts {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Pitch view */
+.pitch-wrap {
+  margin-bottom: 16px;
+}
+.pitch {
+  background: linear-gradient(180deg, #1b5e20, #2e7d32 50%, #1b5e20);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-x: auto;
+}
+.pitch-row {
+  display: flex;
+  justify-content: space-evenly;
+  gap: 8px;
+}
+.jersey-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 78px;
+  flex-shrink: 0;
+}
+.jersey {
+  width: 46px;
+  height: 40px;
+  clip-path: polygon(20% 0%, 35% 15%, 0% 30%, 12% 45%, 22% 38%, 22% 100%, 78% 100%, 78% 38%, 88% 45%, 100% 30%, 65% 15%, 80% 0%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.jersey-team {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+/* Badges are positioned relative to .jersey-chip (not .jersey) — .jersey has
+   a clip-path, which clips every descendant including absolutely-positioned
+   ones, so a badge placed inside it would never be visible. */
+.jersey-badge {
+  position: absolute;
+  top: -4px;
+  left: 6px;
+  margin: 0;
+  z-index: 1;
+}
+.priority-badge {
+  position: absolute;
+  top: -4px;
+  right: 6px;
+  background: #d32f2f;
+  color: #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fff;
+  z-index: 1;
+}
+.jersey-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 78px;
+}
+.jersey-price {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.75);
+}
+/* Outline goes on .jersey-chip (the whole card), not .jersey — .jersey has a
+   clip-path, which would clip an outline placed on it the same way it clips
+   absolutely-positioned badges (see the note on .jersey-badge above). */
+.jersey-chip.suggested {
+  outline: 2px dashed #ffd54f;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.jersey-chip.suggested .jersey-name {
+  color: #ffd54f;
+}
+.bench-row {
+  margin-top: 14px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  padding: 12px;
+}
+.bench-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+.bench-players {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Quick squad scan */
+table.scan .arrow-cell {
+  color: var(--color-muted);
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.badge.verdict-upgrade {
+  background: var(--color-easy);
+  color: #fff;
+}
+.badge.verdict-keep {
+  background: var(--color-panel-2);
+  color: var(--color-muted);
+  border: 1px solid var(--color-line);
+}
+.badge.verdict-no-option {
+  background: transparent;
+  color: var(--color-muted);
+}
+
+/* ============================================================
+   Responsive
+   Two breakpoints: 900px tightens layout (tablet), 640px stacks
+   controls full-width and turns data tables into cards. The
+   Fixtures grid (table.fixture-grid) is deliberately exempt from
+   the card treatment — it's a teams×gameweeks matrix, not a list
+   of records, and stacking it into cards would defeat its whole
+   point (scanning several gameweeks side by side at a glance).
+   It just scrolls horizontally and shrinks its cells instead.
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .jersey-chip {
+    width: 60px;
+  }
+  .jersey {
+    width: 38px;
+    height: 33px;
+  }
+  .jersey-name,
+  .jersey-price {
+    max-width: 60px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* ---- Header/filters/control-bar mobile stacking now lives inline as
+     Tailwind max-sm: variants in each component (max-sm: = below 640px,
+     matching this breakpoint exactly). ---- */
+
+  /* ---- Pitch view: shrink jerseys further so the formation still
+     fits without horizontal scroll on a phone-width screen ---- */
+  .jersey-chip {
+    width: 48px;
+  }
+  .jersey {
+    width: 32px;
+    height: 28px;
+  }
+  .jersey-name,
+  .jersey-price {
+    max-width: 48px;
+    font-size: 9px;
+  }
+  .pitch-row {
+    gap: 3px;
+  }
+  .bench-players {
+    gap: 6px;
+  }
+
+  /* ---- Fixtures grid: exempt from the card treatment (see note
+     above) — just scroll horizontally with tighter cells ---- */
+  .cell-td {
+    min-width: 62px;
+  }
+  .cell {
+    min-height: 38px;
+    font-size: 11px;
+  }
+  .cell-opp {
+    font-size: 11px;
+  }
+
+  /* ---- Data tables (Players / My Squad / Suggestions) become
+     one card per row. table.fixture-grid is a different class and
+     is untouched by any of this. ---- */
+  table.players thead {
+    display: none;
+  }
+  table.players,
+  table.players tbody {
+    display: block;
+    width: 100%;
+  }
+  table.players tr {
+    display: block;
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  table.players tr.group-head {
+    background: none;
+    border: none;
+    padding: 4px 4px;
+    margin-bottom: 4px;
+  }
+  table.players tr.breakdown-row {
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    margin-top: -10px;
+  }
+  table.players td {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--color-line);
+    white-space: normal;
+  }
+  table.players tr > td:last-child {
+    border-bottom: none;
+  }
+  table.players td[data-label]::before {
+    content: attr(data-label);
+    color: var(--color-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  /* .name cells WITHOUT a data-label are the row's own subject
+     (the player) — render as the card title, not a labeled field.
+     ScanRow's .name cells DO carry a data-label (Current/Suggested
+     are two different people being compared in one card), so they
+     keep the normal labeled-row treatment via the rule above. */
+  table.players td.name:not([data-label]) {
+    display: block;
+    font-size: 15px;
+    padding: 2px 0 8px;
+    border-bottom: 1px solid var(--color-line);
+  }
+  table.players td[colspan] {
+    display: block;
+    border-bottom: none;
+  }
+  table.players .arrow-cell {
+    display: none;
+  }
+}

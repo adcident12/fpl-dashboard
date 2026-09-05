@@ -1,0 +1,59 @@
+name: Deploy client to GitHub Pages
+
+# Only the client (client/) is deployed here — GitHub Pages can't run the
+# Express backend. Point it at a separately-hosted backend via the
+# VITE_API_BASE repository variable (Settings → Secrets and variables →
+# Actions → Variables), e.g. https://fpl-dashboard-api.onrender.com/api.
+# Until that variable is set, the deployed site's API calls will fail —
+# see the Deployment doc for the full setup.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+      - name: Build
+        working-directory: client
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+        run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,15 @@
+{
+  "name": "fpl-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Local FPL decision-support dashboard (reads public FPL API only).",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "dev": "concurrently -n server,client -c blue,green \"npm --prefix server start\" \"npm --prefix client run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
