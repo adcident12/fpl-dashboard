@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +16,7 @@ import {
   getElementSummary,
   getEntryPicks,
 } from './fpl.js';
+import { openapiSpec } from './openapi.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -29,6 +31,13 @@ app.disable('x-powered-by'); // don't advertise the Express version
 // security benefit.
 app.use(cors());
 app.use(express.json());
+
+// OpenAPI/Swagger — human-browsable docs at /api-docs, raw spec at
+// /api-docs.json for tooling (e.g. an OpenAPI→MCP bridge) to fetch directly.
+// The spec is hand-written in openapi.js, not generated from JSDoc comments
+// on the routes below — see that file for why.
+app.get('/api-docs.json', (_req, res) => res.json(openapiSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
