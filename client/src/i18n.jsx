@@ -137,6 +137,10 @@ const STRINGS = {
     'sug.captainScoring': 'Scoring starting XI…',
     'sug.captainNote': 'Starting XI only · single next-fixture difficulty · top pick highlighted.',
     'sug.recommended': 'Recommended',
+    'sug.blankEventBadge': 'BLANK',
+    'sug.blankEventTitle': 'No fixture this gameweek — guaranteed 0 points. Fixture score forced to 0.',
+    'sug.dgwEventBadge': 'DGW ×2',
+    'sug.dgwEventTitle': 'Double Gameweek — 2 fixtures this gameweek. Fixture score gets a bonus for the extra scoring chance.',
 
     'chips.loading': 'Loading chip plan…',
     'chips.title': 'Chip windows',
@@ -299,6 +303,10 @@ const STRINGS = {
     'sug.captainScoring': 'กำลังคำนวณตัวจริง…',
     'sug.captainNote': 'พิจารณาเฉพาะตัวจริง · ใช้ความยากนัดถัดไปนัดเดียว · อันดับ 1 ไฮไลต์ไว้',
     'sug.recommended': 'แนะนำ',
+    'sug.blankEventBadge': 'ไม่มีนัด',
+    'sug.blankEventTitle': 'ไม่มีนัดแข่งในสัปดาห์นี้ — ได้ 0 แต้มแน่นอน คะแนนด้าน fixture ถูกบังคับให้เป็น 0',
+    'sug.dgwEventBadge': 'DGW ×2',
+    'sug.dgwEventTitle': 'Double Gameweek — มี 2 นัดในสัปดาห์นี้ คะแนนด้าน fixture ได้โบนัสเพิ่มจากโอกาสทำแต้ม 2 ครั้ง',
 
     'chips.loading': 'กำลังโหลดแผน chip…',
     'chips.title': 'ช่วงเวลาใช้ Chip',

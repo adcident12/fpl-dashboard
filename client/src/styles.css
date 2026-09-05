@@ -364,6 +364,18 @@ tr.bench td {
   background: #90a4ae;
   color: #1a1a1a;
 }
+.badge.event-flag {
+  margin-left: 5px;
+  margin-right: 0;
+}
+.badge.event-flag.blank {
+  background: var(--color-hard);
+  color: #fff;
+}
+.badge.event-flag.dgw {
+  background: var(--color-accent);
+  color: #fff;
+}
 
 .muted {
   color: var(--color-muted);
@@ -419,6 +431,10 @@ tr.breakdown-row td {
 .chip-pts {
   color: var(--color-accent);
   font-weight: 700;
+}
+.chip-note {
+  color: var(--color-muted);
+  font-style: italic;
 }
 
 /* Pitch view */

@@ -295,6 +295,13 @@ export async function buildSquad(teamId, eventId) {
 export const SCORING = {
   transfer: { form: 0.4, fixture: 0.35, value: 0.25 },
   captain: { form: 0.45, fixture: 0.4, value: 0.15 },
+  // Flat bonus added to the normalized fixture score when a player's team
+  // has 2 fixtures in the gameweek being planned for (a Double Gameweek) —
+  // two scoring chances is a real edge a single-fixture FDR average can't
+  // express. A confirmed Blank Gameweek (0 fixtures that gameweek) instead
+  // forces the fixture component to 0, not the neutral midpoint, because a
+  // blank is a guaranteed zero, not missing data — see `eventFixturesFor()`.
+  dgwBonus: 20,
 };
 
 const NEUTRAL = 50;
@@ -334,28 +341,80 @@ export function normFixture1(fdr) {
 async function getSquadContext(teamId, eventId) {
   const data = await buildData();
   const ev = eventId ?? data.meta.currentEventId;
-  const picks = await getEntryPicks(teamId, ev);
+  const [picks, bootstrap, fixtures] = await Promise.all([
+    getEntryPicks(teamId, ev),
+    getBootstrap(),
+    getFixtures(),
+  ]);
   const byId = new Map(data.players.map((p) => [p.id, p]));
   const squadIds = new Set((picks.picks ?? []).map((pk) => pk.element));
   const bank = (picks.entry_history?.bank ?? 0) / 10; // -> £m
-  return { data, ev, picks, byId, squadIds, bank };
+
+  // Fixtures for the EXACT gameweek `ev` is being planned for — distinct
+  // from buildData()'s `nextFixtures` (next 3 real matches chronologically,
+  // which silently skips a Blank Gameweek and can't tell a Double
+  // Gameweek's two legs apart from two fixtures in different future
+  // gameweeks). A team missing from this map has 0 fixtures this gameweek
+  // (blank); 2 entries means a double. See scoreTransferComponents() /
+  // buildCaptainSuggestions() for how this corrects their scoring.
+  const teamsById = new Map(bootstrap.teams.map((t) => [t.id, t]));
+  const eventFixturesByTeam = new Map();
+  for (const f of fixtures) {
+    if (f.event !== ev) continue;
+    for (const side of ['h', 'a']) {
+      const tId = f[`team_${side}`];
+      const oppId = f[`team_${side === 'h' ? 'a' : 'h'}`];
+      if (!eventFixturesByTeam.has(tId)) eventFixturesByTeam.set(tId, []);
+      eventFixturesByTeam.get(tId).push({
+        event: ev,
+        opponentId: oppId,
+        opponentShort: teamsById.get(oppId)?.short_name ?? '?',
+        opponentName: teamsById.get(oppId)?.name ?? '?',
+        home: side === 'h',
+        difficulty: f[`team_${side}_difficulty`],
+      });
+    }
+  }
+
+  return { data, ev, picks, byId, squadIds, bank, eventFixturesByTeam };
+}
+
+// A team's actual fixtures for the gameweek `ctx` was built for. Empty
+// array = Blank Gameweek, 2 entries = Double Gameweek.
+function eventFixturesFor(ctx, teamId) {
+  return ctx.eventFixturesByTeam.get(teamId) ?? [];
 }
 
 // Score a single player with the transfer weights (form + next-3-GW fixture +
 // value), against a given max-value basis for normalization. Shared by
 // buildTransferSuggestions (score each candidate) and buildSquadScan (also
 // scores the current incumbent, on the same basis, so they're comparable).
-function scoreTransferComponents(p, maxValue) {
+// `eventFixtureCount` (0/1/2+, from eventFixturesFor() for the gameweek being
+// planned for) corrects a blind spot the next-3-average alone can't see: it
+// can't distinguish "next 3 real matches, immediate week included" from
+// "next 3 real matches, but the immediate week is actually a blank" — a
+// count of 0 forces the fixture component to 0 (guaranteed zero that week,
+// not the neutral-midpoint fallback used for genuinely missing data), and a
+// count of 2+ (a double) adds SCORING.dgwBonus for the extra scoring chance.
+function scoreTransferComponents(p, maxValue, eventFixtureCount) {
   const w = SCORING.transfer;
   const formN = normForm(p.form);
-  const fixtureN = normFixture3(p.next3AvgFDR);
+  let fixtureN = normFixture3(p.next3AvgFDR);
+  let fixtureNote = null;
+  if (eventFixtureCount === 0) {
+    fixtureN = 0;
+    fixtureNote = 'blank';
+  } else if (eventFixtureCount >= 2) {
+    fixtureN = Math.min(100, fixtureN + SCORING.dgwBonus);
+    fixtureNote = 'double';
+  }
   const valueN = normValue(p.valueSeason, maxValue);
   const score = w.form * formN + w.fixture * fixtureN + w.value * valueN;
   return {
     score: round1(score),
     breakdown: {
       form: { raw: p.form, normalized: round1(formN), weight: w.form, points: round1(w.form * formN) },
-      fixture: { raw: p.next3AvgFDR, normalized: round1(fixtureN), weight: w.fixture, points: round1(w.fixture * fixtureN) },
+      fixture: { raw: p.next3AvgFDR, normalized: round1(fixtureN), weight: w.fixture, points: round1(w.fixture * fixtureN), note: fixtureNote },
       value: { raw: p.valueSeason, normalized: round1(valueN), weight: w.value, points: round1(w.value * valueN) },
     },
   };
@@ -374,7 +433,8 @@ function scoreAffordableCandidates(incumbent, ctx) {
   const affordable = candidates.filter((p) => p.price <= ctx.bank + incumbent.price);
 
   const scored = affordable.map((p) => {
-    const { score, breakdown } = scoreTransferComponents(p, maxValue);
+    const eventFixtureCount = eventFixturesFor(ctx, p.teamId).length;
+    const { score, breakdown } = scoreTransferComponents(p, maxValue, eventFixtureCount);
     return {
       id: p.id,
       name: p.name,
@@ -388,6 +448,9 @@ function scoreAffordableCandidates(incumbent, ctx) {
       valueSeason: p.valueSeason,
       status: p.status,
       news: p.news,
+      eventFixtureCount,
+      blankEvent: eventFixtureCount === 0,
+      dgwEvent: eventFixtureCount >= 2,
       score,
       breakdown,
     };
@@ -413,6 +476,7 @@ export async function buildTransferSuggestions(teamId, replaceId, eventId) {
   }
 
   const { scored } = scoreAffordableCandidates(replaced, ctx);
+  const replacedEventFixtureCount = eventFixturesFor(ctx, replaced.teamId).length;
 
   return {
     teamId,
@@ -423,6 +487,8 @@ export async function buildTransferSuggestions(teamId, replaceId, eventId) {
       name: replaced.name,
       position: replaced.position,
       price: replaced.price,
+      blankEvent: replacedEventFixtureCount === 0,
+      dgwEvent: replacedEventFixtureCount >= 2,
     },
     weights: SCORING.transfer,
     candidates: scored.slice(0, 5),
@@ -445,7 +511,8 @@ export async function buildSquadScan(teamId, eventId) {
 
   const rows = starting.map((current) => {
     const { scored, maxValue } = scoreAffordableCandidates(current, ctx);
-    const currentScored = scoreTransferComponents(current, maxValue);
+    const currentEventFixtureCount = eventFixturesFor(ctx, current.teamId).length;
+    const currentScored = scoreTransferComponents(current, maxValue, currentEventFixtureCount);
     const best = scored[0] ?? null;
 
     return {
@@ -455,6 +522,9 @@ export async function buildSquadScan(teamId, eventId) {
         teamShort: current.teamShort,
         position: current.position,
         price: current.price,
+        eventFixtureCount: currentEventFixtureCount,
+        blankEvent: currentEventFixtureCount === 0,
+        dgwEvent: currentEventFixtureCount >= 2,
         score: currentScored.score,
         breakdown: currentScored.breakdown,
       },
@@ -475,7 +545,13 @@ export async function buildSquadScan(teamId, eventId) {
 /**
  * Phase 4 — captain suggestions.
  * Only the starting XI are considered. Each is scored with the captain
- * weights using the SINGLE next fixture's FDR (not the 3-GW average).
+ * weights over the ACTUAL fixture(s) of the gameweek being planned for
+ * (`eventFixturesFor()`), not just "whichever real match comes next
+ * chronologically" — the latter silently skips a Blank Gameweek (picking up
+ * a fixture from a later gameweek and hiding that the captain would score a
+ * guaranteed 0 armbanding this player) and can't credit a Double Gameweek's
+ * two scoring chances. A blank forces the fixture component to 0; a double
+ * scores the average difficulty of both legs plus SCORING.dgwBonus.
  * Returns the full ranked list with a per-component breakdown.
  */
 export async function buildCaptainSuggestions(teamId, eventId) {
@@ -488,10 +564,25 @@ export async function buildCaptainSuggestions(teamId, eventId) {
   const maxValue = Math.max(...ctx.data.players.map((p) => p.valueSeason));
 
   const scored = starting.map((p) => {
-    const next = p.nextFixtures?.[0] ?? null;
-    const nextFDR = next?.difficulty ?? null;
+    const eventFixtures = eventFixturesFor(ctx, p.teamId);
+    const eventFixtureCount = eventFixtures.length;
+    const avgDifficulty = eventFixtureCount
+      ? eventFixtures.reduce((s, f) => s + f.difficulty, 0) / eventFixtureCount
+      : null;
+
     const formN = normForm(p.form);
-    const fixtureN = normFixture1(nextFDR);
+    let fixtureN;
+    let fixtureNote = null;
+    if (eventFixtureCount === 0) {
+      fixtureN = 0;
+      fixtureNote = 'blank';
+    } else {
+      fixtureN = normFixture1(avgDifficulty);
+      if (eventFixtureCount >= 2) {
+        fixtureN = Math.min(100, fixtureN + SCORING.dgwBonus);
+        fixtureNote = 'double';
+      }
+    }
     const valueN = normValue(p.valueSeason, maxValue);
     const score = w.form * formN + w.fixture * fixtureN + w.value * valueN;
     return {
@@ -502,17 +593,20 @@ export async function buildCaptainSuggestions(teamId, eventId) {
       price: p.price,
       form: p.form,
       formN: round1(formN),
-      nextFDR,
-      nextOpponent: next?.opponentShort ?? null,
-      nextHome: next?.home ?? null,
-      nextFixtures: next ? [next] : [],
+      eventFixtureCount,
+      blankEvent: eventFixtureCount === 0,
+      dgwEvent: eventFixtureCount >= 2,
+      nextFDR: avgDifficulty,
+      nextOpponent: eventFixtures.map((f) => f.opponentShort).join(' & ') || null,
+      nextHome: eventFixtures[0]?.home ?? null,
+      nextFixtures: eventFixtures,
       fixtureN: round1(fixtureN),
       valueSeason: p.valueSeason,
       valueN: round1(valueN),
       score: round1(score),
       breakdown: {
         form: { raw: p.form, normalized: round1(formN), weight: w.form, points: round1(w.form * formN) },
-        fixture: { raw: nextFDR, normalized: round1(fixtureN), weight: w.fixture, points: round1(w.fixture * fixtureN) },
+        fixture: { raw: avgDifficulty, normalized: round1(fixtureN), weight: w.fixture, points: round1(w.fixture * fixtureN), note: fixtureNote },
         value: { raw: p.valueSeason, normalized: round1(valueN), weight: w.value, points: round1(w.value * valueN) },
       },
     };

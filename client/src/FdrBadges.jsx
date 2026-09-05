@@ -27,7 +27,11 @@ export default function FdrBadges({ fixtures }) {
           label: t(FDR_LABEL_KEY[bucket]),
         });
         return (
-          <span key={f.event} className={`fdr-badge fdr-${bucket}`} title={title}>
+          // event alone isn't a unique key here: a Double Gameweek's two legs
+          // share the same event id (captain suggestions now pass the target
+          // gameweek's actual fixtures, which can be 2 for a DGW) — pair it
+          // with opponentId, which always differs between the two legs.
+          <span key={`${f.event}-${f.opponentId}`} className={`fdr-badge fdr-${bucket}`} title={title}>
             {f.opponentShort}
           </span>
         );

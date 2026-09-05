@@ -12,16 +12,44 @@ function pct(w) {
 }
 
 // One weighted component, shown as "raw → normalized (weight) = points".
-function ComponentChip({ label, comp }) {
+// `comp.note` ('blank'/'double', fixture component only) means the raw
+// average FDR was overridden — see server/fpl.js's scoreTransferComponents —
+// so the tooltip and an inline flag both say so instead of just showing the
+// adjusted number with no explanation (never a black box).
+function ComponentChip({ label, comp, t }) {
+  const noteText = comp.note === 'blank' ? t('sug.blankEventBadge') : comp.note === 'double' ? t('sug.dgwEventBadge') : null;
   return (
-    <span className="chip" title={`${label}: ${comp.raw} → ${comp.normalized} × ${comp.weight} = ${comp.points}`}>
+    <span className="chip" title={`${label}: ${comp.raw} → ${comp.normalized} × ${comp.weight} = ${comp.points}${noteText ? ` (${noteText})` : ''}`}>
       <span className="chip-label">{label} {pct(comp.weight)}</span>
       <span className="chip-vals">
         {comp.raw} → {comp.normalized}
+        {noteText && <span className="chip-note"> ({noteText})</span>}
       </span>
       <span className="chip-pts">= {comp.points}</span>
     </span>
   );
+}
+
+// A Blank/Double Gameweek flag for the gameweek being planned for — the
+// scoring already accounts for this (forced to 0 for a blank, +dgwBonus for
+// a double, see server/fpl.js), this badge just makes that visible instead
+// of a silent number shift.
+function EventFlagBadge({ blankEvent, dgwEvent, t }) {
+  if (blankEvent) {
+    return (
+      <span className="badge event-flag blank" title={t('sug.blankEventTitle')}>
+        {t('sug.blankEventBadge')}
+      </span>
+    );
+  }
+  if (dgwEvent) {
+    return (
+      <span className="badge event-flag dgw" title={t('sug.dgwEventTitle')}>
+        {t('sug.dgwEventBadge')}
+      </span>
+    );
+  }
+  return null;
 }
 
 // A candidate row: main line + an always-visible breakdown line (never a black box).
@@ -33,6 +61,7 @@ function CandidateRow({ c, rank, highlight, t }) {
         <td className="name">
           {highlight && <span className="badge cap" title={t('sug.recommended')}>★</span>}
           {c.name}
+          <EventFlagBadge blankEvent={c.blankEvent} dgwEvent={c.dgwEvent} t={t} />
         </td>
         <td data-label={t('table.team')}>{c.teamShort}</td>
         <td data-label={t('table.pos')}>
@@ -46,9 +75,9 @@ function CandidateRow({ c, rank, highlight, t }) {
       </tr>
       <tr className="breakdown-row">
         <td colSpan={7}>
-          <ComponentChip label={t('weights.form')} comp={c.breakdown.form} />
-          <ComponentChip label={t('weights.fixtures')} comp={c.breakdown.fixture} />
-          <ComponentChip label={t('weights.value')} comp={c.breakdown.value} />
+          <ComponentChip label={t('weights.form')} comp={c.breakdown.form} t={t} />
+          <ComponentChip label={t('weights.fixtures')} comp={c.breakdown.fixture} t={t} />
+          <ComponentChip label={t('weights.value')} comp={c.breakdown.value} t={t} />
         </td>
       </tr>
     </>
@@ -74,9 +103,10 @@ function WeightsEcho({ weights, label }) {
 // would be too tall for a quick scan.
 function breakdownTitle(entry, t) {
   const b = entry.breakdown;
+  const fixtureNote = b.fixture.note === 'blank' ? ` (${t('sug.blankEventBadge')})` : b.fixture.note === 'double' ? ` (${t('sug.dgwEventBadge')})` : '';
   return (
     `${t('weights.form')} ${pct(b.form.weight)}: ${b.form.raw} → ${b.form.normalized} · ` +
-    `${t('weights.fixtures')} ${pct(b.fixture.weight)}: ${b.fixture.raw} → ${b.fixture.normalized} · ` +
+    `${t('weights.fixtures')} ${pct(b.fixture.weight)}: ${b.fixture.raw} → ${b.fixture.normalized}${fixtureNote} · ` +
     `${t('weights.value')} ${pct(b.value.weight)}: ${b.value.raw} → ${b.value.normalized} · ` +
     `score = ${entry.score}`
   );
@@ -93,6 +123,7 @@ function ScanRow({ row, t }) {
       </td>
       <td className="name" title={breakdownTitle(current, t)} data-label={t('sug.scanCurrent')}>
         {current.name} <span className="muted">£{current.price.toFixed(2)}m</span>
+        <EventFlagBadge blankEvent={current.blankEvent} dgwEvent={current.dgwEvent} t={t} />
       </td>
       <td className="num" data-label={t('sug.currentScore')}>{current.score.toFixed(1)}</td>
       <td className="arrow-cell">→</td>
@@ -100,6 +131,7 @@ function ScanRow({ row, t }) {
         <>
           <td className="name" title={breakdownTitle(suggestion, t)} data-label={t('sug.scanSuggested')}>
             {suggestion.name} <span className="muted">({suggestion.teamShort}, £{suggestion.price.toFixed(2)}m)</span>
+            <EventFlagBadge blankEvent={suggestion.blankEvent} dgwEvent={suggestion.dgwEvent} t={t} />
           </td>
           <td className="num" data-label={t('sug.suggestedScore')}>{suggestion.score.toFixed(1)}</td>
           <td data-label={t('table.next3fdr')}>
