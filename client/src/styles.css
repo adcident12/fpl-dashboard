@@ -381,6 +381,19 @@ tr.bench td {
   background: var(--color-accent);
   color: #fff;
 }
+.badge.event-flag.availability-severe {
+  background: var(--color-hard);
+  color: #fff;
+}
+.badge.event-flag.availability-minor {
+  background: var(--color-med);
+  color: #1a1a1a;
+}
+.badge.event-flag.penalty {
+  background: var(--color-panel-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-line);
+}
 
 .muted {
   color: var(--color-muted);
@@ -440,6 +453,12 @@ tr.breakdown-row td {
 .chip-note {
   color: var(--color-muted);
   font-style: italic;
+}
+.chip-availability {
+  border-color: var(--color-hard);
+}
+.chip-availability .chip-pts {
+  color: var(--color-hard);
 }
 
 /* Pitch view */

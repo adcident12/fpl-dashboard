@@ -93,6 +93,22 @@ export async function buildData() {
       ictIndex: Number.parseFloat(el.ict_index),
       xG: Number.parseFloat(el.expected_goals),
       xA: Number.parseFloat(el.expected_assists),
+      // xG+xA per 90 minutes — a forward-looking "should be scoring/assisting
+      // this much" signal, distinct from `form` (backward-looking actual
+      // points, which mixes in finishing luck). 0 is a real value for a
+      // defensive player, not missing data.
+      xgi90: Number.parseFloat(el.expected_goal_involvements_per_90),
+      minutes: el.minutes,
+      // Chance of playing the gameweek about to be planned for, 0-100. FPL
+      // returns `null` for both this-round/next-round fields when there's no
+      // fitness doubt at all, which we read as 100 (fully expected to play) —
+      // NOT as missing data, so `??` (not `||`) matters here since 0 is a
+      // real, valid value (definitely not playing).
+      availabilityPct: el.chance_of_playing_this_round ?? el.chance_of_playing_next_round ?? 100,
+      // 1 = the club's first-choice penalty taker; null = not on the list at
+      // all. Shown as a badge only, never weighted into the score — how many
+      // penalties a team wins is too unpredictable to model as a formula input.
+      penaltyOrder: el.penalties_order,
       status: el.status,
       news: el.news,
       transfersIn: el.transfers_in,
@@ -293,8 +309,13 @@ export async function buildSquad(teamId, eventId) {
 // easy to tune. Every component is normalized to a 0-100 scale before the
 // weighted sum. A missing/null component falls back to a neutral midpoint.
 export const SCORING = {
-  transfer: { form: 0.4, fixture: 0.35, value: 0.25 },
-  captain: { form: 0.45, fixture: 0.4, value: 0.15 },
+  // `underlying` (xG+xA per 90) is a 4th weighted component, not blended
+  // into `form` — form is backward-looking actual points (mixes in finishing
+  // luck), underlying is forward-looking "should be scoring this much".
+  // Kept separate so the breakdown shows both honestly instead of one
+  // number silently averaging two different signals.
+  transfer: { form: 0.3, fixture: 0.3, value: 0.2, underlying: 0.2 },
+  captain: { form: 0.35, fixture: 0.35, value: 0.1, underlying: 0.2 },
   // Flat bonus added to the normalized fixture score when a player's team
   // has 2 fixtures in the gameweek being planned for (a Double Gameweek) —
   // two scoring chances is a real edge a single-fixture FDR average can't
@@ -305,6 +326,14 @@ export const SCORING = {
 };
 
 const NEUTRAL = 50;
+// Below this many minutes played, `xgi90` (a per-90 extrapolation) is
+// statistically meaningless — e.g. 1 minute with a 0.17 xGI contribution
+// extrapolates to 15.3 per 90, dwarfing every real striker in the league.
+// Below the threshold, both the player's own underlying score AND their
+// eligibility to set the pool's max (see scoreAffordableCandidates /
+// buildCaptainSuggestions) are excluded — a single low-minutes outlier
+// would otherwise compress everyone else's normalized score toward zero.
+const MIN_MINUTES_FOR_XGI = 180;
 
 const round1 = (n) => Math.round(n * 10) / 10;
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -329,6 +358,27 @@ export function normFixture3(avgFDR) {
 export function normFixture1(fdr) {
   if (fdr == null || Number.isNaN(fdr)) return NEUTRAL;
   return ((5 - fdr) / 4) * 100;
+}
+// xG+xA per 90, scaled against the highest value in the comparison pool
+// (same-position candidates for transfers, the whole player pool for
+// captain — matching how normValue's maxValueSeason is scoped in each
+// caller). 0 is a real value (e.g. most defenders/GKs), not missing data —
+// only a genuinely unparseable value falls back to the neutral midpoint.
+export function normUnderlying(xgi90, maxXgi90, minutes) {
+  if (xgi90 == null || Number.isNaN(xgi90) || !maxXgi90) return NEUTRAL;
+  if (minutes == null || minutes < MIN_MINUTES_FOR_XGI) return NEUTRAL;
+  return (xgi90 / maxXgi90) * 100;
+}
+// Availability is applied as a MULTIPLIER on the final weighted score, not
+// as a 5th weighted-and-normalized component — it answers a different
+// question ("how likely are they to deliver that score at all") than the
+// other components ("how good is this player if they play"), so a 25%
+// chance of playing quarters the whole score instead of being diluted into
+// one nudge among several. `null` (no fitness doubt) means the multiplier
+// is 1 (no reduction), matching buildData()'s availabilityPct default of 100.
+export function availabilityMultiplier(availabilityPct) {
+  if (availabilityPct == null || Number.isNaN(availabilityPct)) return 1;
+  return Math.max(0, Math.min(100, availabilityPct)) / 100;
 }
 
 /**
@@ -386,9 +436,10 @@ function eventFixturesFor(ctx, teamId) {
 }
 
 // Score a single player with the transfer weights (form + next-3-GW fixture +
-// value), against a given max-value basis for normalization. Shared by
-// buildTransferSuggestions (score each candidate) and buildSquadScan (also
-// scores the current incumbent, on the same basis, so they're comparable).
+// value + underlying), against given max-value/max-xgi bases for
+// normalization. Shared by buildTransferSuggestions (score each candidate)
+// and buildSquadScan (also scores the current incumbent, on the same basis,
+// so they're comparable).
 // `eventFixtureCount` (0/1/2+, from eventFixturesFor() for the gameweek being
 // planned for) corrects a blind spot the next-3-average alone can't see: it
 // can't distinguish "next 3 real matches, immediate week included" from
@@ -396,7 +447,10 @@ function eventFixturesFor(ctx, teamId) {
 // count of 0 forces the fixture component to 0 (guaranteed zero that week,
 // not the neutral-midpoint fallback used for genuinely missing data), and a
 // count of 2+ (a double) adds SCORING.dgwBonus for the extra scoring chance.
-function scoreTransferComponents(p, maxValue, eventFixtureCount) {
+// The final weighted score is then scaled by availabilityMultiplier() — a
+// doubtful/injured player's score drops in proportion to their chance of
+// playing at all, on top of (not instead of) the 4 weighted components.
+function scoreTransferComponents(p, maxValue, maxXgi90, eventFixtureCount) {
   const w = SCORING.transfer;
   const formN = normForm(p.form);
   let fixtureN = normFixture3(p.next3AvgFDR);
@@ -409,32 +463,44 @@ function scoreTransferComponents(p, maxValue, eventFixtureCount) {
     fixtureNote = 'double';
   }
   const valueN = normValue(p.valueSeason, maxValue);
-  const score = w.form * formN + w.fixture * fixtureN + w.value * valueN;
+  const underlyingN = normUnderlying(p.xgi90, maxXgi90, p.minutes);
+  const rawScore = w.form * formN + w.fixture * fixtureN + w.value * valueN + w.underlying * underlyingN;
+  const availMult = availabilityMultiplier(p.availabilityPct);
+  const score = rawScore * availMult;
   return {
     score: round1(score),
+    // The 4 weighted components sum to `preAvailabilityScore`, not `score` —
+    // the availability multiplier is applied after, so the client can show
+    // both ("82.4 → 20.6 at 25% chance of playing") instead of a component
+    // breakdown that mysteriously doesn't add up to the final number.
+    preAvailabilityScore: round1(rawScore),
     breakdown: {
       form: { raw: p.form, normalized: round1(formN), weight: w.form, points: round1(w.form * formN) },
       fixture: { raw: p.next3AvgFDR, normalized: round1(fixtureN), weight: w.fixture, points: round1(w.fixture * fixtureN), note: fixtureNote },
       value: { raw: p.valueSeason, normalized: round1(valueN), weight: w.value, points: round1(w.value * valueN) },
+      underlying: { raw: p.xgi90, normalized: round1(underlyingN), weight: w.underlying, points: round1(w.underlying * underlyingN) },
+      availability: { pct: p.availabilityPct, multiplier: round2(availMult) },
     },
   };
 }
 
 // Same-position, not-already-in-squad, affordable (price <= bank + price of
 // the player being sold) candidates for `incumbent`, scored and sorted best
-// first. `maxValue` (for value normalization) is the max among same-position
-// candidates, so it's returned alongside for scoring the incumbent on the
-// same basis.
+// first. `maxValue`/`maxXgi90` (for value/underlying normalization) are the
+// max among same-position candidates, so both are returned alongside for
+// scoring the incumbent on the same basis.
 function scoreAffordableCandidates(incumbent, ctx) {
   const candidates = ctx.data.players.filter(
     (p) => p.positionId === incumbent.positionId && !ctx.squadIds.has(p.id)
   );
   const maxValue = candidates.length ? Math.max(...candidates.map((p) => p.valueSeason)) : 0;
+  const reliableXgi = candidates.filter((p) => p.minutes >= MIN_MINUTES_FOR_XGI);
+  const maxXgi90 = reliableXgi.length ? Math.max(...reliableXgi.map((p) => p.xgi90)) : 0;
   const affordable = candidates.filter((p) => p.price <= ctx.bank + incumbent.price);
 
   const scored = affordable.map((p) => {
     const eventFixtureCount = eventFixturesFor(ctx, p.teamId).length;
-    const { score, breakdown } = scoreTransferComponents(p, maxValue, eventFixtureCount);
+    const { score, preAvailabilityScore, breakdown } = scoreTransferComponents(p, maxValue, maxXgi90, eventFixtureCount);
     return {
       id: p.id,
       name: p.name,
@@ -446,18 +512,22 @@ function scoreAffordableCandidates(incumbent, ctx) {
       avgFDR: p.next3AvgFDR,
       nextFixtures: p.nextFixtures,
       valueSeason: p.valueSeason,
+      xgi90: p.xgi90,
+      availabilityPct: p.availabilityPct,
+      penaltyOrder: p.penaltyOrder,
       status: p.status,
       news: p.news,
       eventFixtureCount,
       blankEvent: eventFixtureCount === 0,
       dgwEvent: eventFixtureCount >= 2,
       score,
+      preAvailabilityScore,
       breakdown,
     };
   });
 
   scored.sort((a, b) => b.score - a.score);
-  return { scored, maxValue };
+  return { scored, maxValue, maxXgi90 };
 }
 
 /**
@@ -487,6 +557,8 @@ export async function buildTransferSuggestions(teamId, replaceId, eventId) {
       name: replaced.name,
       position: replaced.position,
       price: replaced.price,
+      availabilityPct: replaced.availabilityPct,
+      penaltyOrder: replaced.penaltyOrder,
       blankEvent: replacedEventFixtureCount === 0,
       dgwEvent: replacedEventFixtureCount >= 2,
     },
@@ -510,9 +582,9 @@ export async function buildSquadScan(teamId, eventId) {
     .filter(Boolean);
 
   const rows = starting.map((current) => {
-    const { scored, maxValue } = scoreAffordableCandidates(current, ctx);
+    const { scored, maxValue, maxXgi90 } = scoreAffordableCandidates(current, ctx);
     const currentEventFixtureCount = eventFixturesFor(ctx, current.teamId).length;
-    const currentScored = scoreTransferComponents(current, maxValue, currentEventFixtureCount);
+    const currentScored = scoreTransferComponents(current, maxValue, maxXgi90, currentEventFixtureCount);
     const best = scored[0] ?? null;
 
     return {
@@ -522,10 +594,13 @@ export async function buildSquadScan(teamId, eventId) {
         teamShort: current.teamShort,
         position: current.position,
         price: current.price,
+        availabilityPct: current.availabilityPct,
+        penaltyOrder: current.penaltyOrder,
         eventFixtureCount: currentEventFixtureCount,
         blankEvent: currentEventFixtureCount === 0,
         dgwEvent: currentEventFixtureCount >= 2,
         score: currentScored.score,
+        preAvailabilityScore: currentScored.preAvailabilityScore,
         breakdown: currentScored.breakdown,
       },
       suggestion: best,
@@ -562,6 +637,8 @@ export async function buildCaptainSuggestions(teamId, eventId) {
     .map((pk) => ctx.byId.get(pk.element))
     .filter(Boolean);
   const maxValue = Math.max(...ctx.data.players.map((p) => p.valueSeason));
+  const reliableXgi = ctx.data.players.filter((p) => p.minutes >= MIN_MINUTES_FOR_XGI);
+  const maxXgi90 = reliableXgi.length ? Math.max(...reliableXgi.map((p) => p.xgi90)) : 0;
 
   const scored = starting.map((p) => {
     const eventFixtures = eventFixturesFor(ctx, p.teamId);
@@ -584,7 +661,10 @@ export async function buildCaptainSuggestions(teamId, eventId) {
       }
     }
     const valueN = normValue(p.valueSeason, maxValue);
-    const score = w.form * formN + w.fixture * fixtureN + w.value * valueN;
+    const underlyingN = normUnderlying(p.xgi90, maxXgi90, p.minutes);
+    const rawScore = w.form * formN + w.fixture * fixtureN + w.value * valueN + w.underlying * underlyingN;
+    const availMult = availabilityMultiplier(p.availabilityPct);
+    const score = rawScore * availMult;
     return {
       id: p.id,
       name: p.name,
@@ -593,6 +673,8 @@ export async function buildCaptainSuggestions(teamId, eventId) {
       price: p.price,
       form: p.form,
       formN: round1(formN),
+      availabilityPct: p.availabilityPct,
+      penaltyOrder: p.penaltyOrder,
       eventFixtureCount,
       blankEvent: eventFixtureCount === 0,
       dgwEvent: eventFixtureCount >= 2,
@@ -604,10 +686,13 @@ export async function buildCaptainSuggestions(teamId, eventId) {
       valueSeason: p.valueSeason,
       valueN: round1(valueN),
       score: round1(score),
+      preAvailabilityScore: round1(rawScore),
       breakdown: {
         form: { raw: p.form, normalized: round1(formN), weight: w.form, points: round1(w.form * formN) },
         fixture: { raw: avgDifficulty, normalized: round1(fixtureN), weight: w.fixture, points: round1(w.fixture * fixtureN), note: fixtureNote },
         value: { raw: p.valueSeason, normalized: round1(valueN), weight: w.value, points: round1(w.value * valueN) },
+        underlying: { raw: p.xgi90, normalized: round1(underlyingN), weight: w.underlying, points: round1(w.underlying * underlyingN) },
+        availability: { pct: p.availabilityPct, multiplier: round2(availMult) },
       },
     };
   });

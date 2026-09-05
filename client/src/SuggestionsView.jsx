@@ -56,6 +56,57 @@ function EventFlagBadge({ blankEvent, dgwEvent, t }) {
   return null;
 }
 
+// Chance-of-playing flag — only shown when there's an actual doubt (100%/null
+// means fully fit, nothing to show). The score itself already applies the
+// same percentage as a multiplier (see server/fpl.js's availabilityMultiplier),
+// this badge just makes that visible instead of a silent number shift.
+function AvailabilityBadge({ availabilityPct, t }) {
+  if (availabilityPct == null || availabilityPct >= 100) return null;
+  const severity = availabilityPct <= 50 ? 'severe' : 'minor';
+  return (
+    <span className={`badge event-flag availability-${severity}`} title={t('sug.availabilityTitle', { pct: availabilityPct })}>
+      {t('sug.availabilityBadge', { pct: availabilityPct })}
+    </span>
+  );
+}
+
+// First-choice penalty taker — informational only, never weighted into the
+// score (how many penalties a team wins is too unpredictable to model).
+function PenaltyBadge({ penaltyOrder, t }) {
+  if (penaltyOrder !== 1) return null;
+  return (
+    <span className="badge event-flag penalty" title={t('sug.penaltyTakerTitle')}>
+      {t('sug.penaltyTakerBadge')}
+    </span>
+  );
+}
+
+// All per-player flag badges together, so call sites don't need to grow a
+// new prop/component every time a badge is added.
+function PlayerFlags({ p, t }) {
+  return (
+    <>
+      <EventFlagBadge blankEvent={p.blankEvent} dgwEvent={p.dgwEvent} t={t} />
+      <AvailabilityBadge availabilityPct={p.availabilityPct} t={t} />
+      <PenaltyBadge penaltyOrder={p.penaltyOrder} t={t} />
+    </>
+  );
+}
+
+// The availability multiplier isn't a normalized/weighted component like
+// form/fixture/value/underlying (no "raw → normalized × weight" shape), so
+// it gets its own chip — shown only when it actually changed the score.
+function AvailabilityChip({ availability, preScore, score, t }) {
+  if (availability.multiplier >= 1) return null;
+  return (
+    <span className="chip chip-availability" title={t('sug.availabilityChipTitle', { pct: availability.pct })}>
+      <span className="chip-label">{t('weights.availability')}</span>
+      <span className="chip-vals">{preScore} → {score}</span>
+      <span className="chip-pts">× {availability.multiplier}</span>
+    </span>
+  );
+}
+
 // A candidate row: main line + an always-visible breakdown line (never a black box).
 function CandidateRow({ c, rank, highlight, t }) {
   return (
@@ -65,7 +116,7 @@ function CandidateRow({ c, rank, highlight, t }) {
         <td className="name">
           {highlight && <span className="badge cap" title={t('sug.recommended')}>★</span>}
           {c.name}
-          <EventFlagBadge blankEvent={c.blankEvent} dgwEvent={c.dgwEvent} t={t} />
+          <PlayerFlags p={c} t={t} />
         </td>
         <td data-label={t('table.team')}>{c.teamShort}</td>
         <td data-label={t('table.pos')}>
@@ -82,6 +133,8 @@ function CandidateRow({ c, rank, highlight, t }) {
           <ComponentChip label={t('weights.form')} comp={c.breakdown.form} t={t} />
           <ComponentChip label={t('weights.fixtures')} comp={c.breakdown.fixture} t={t} />
           <ComponentChip label={t('weights.value')} comp={c.breakdown.value} t={t} />
+          <ComponentChip label={t('weights.underlying')} comp={c.breakdown.underlying} t={t} />
+          <AvailabilityChip availability={c.breakdown.availability} preScore={c.preAvailabilityScore} score={c.score} t={t} />
         </td>
       </tr>
     </>
@@ -97,7 +150,8 @@ function WeightsEcho({ weights, label }) {
   return (
     <span className="text-xs text-muted">
       <b className="text-text">{label}:</b> {weights.formLabel} {pct(weights.form)} · {weights.fixturesLabel}{' '}
-      {pct(weights.fixture)} · {weights.valueLabel} {pct(weights.value)}
+      {pct(weights.fixture)} · {weights.valueLabel} {pct(weights.value)} · {weights.underlyingLabel}{' '}
+      {pct(weights.underlying)}
     </span>
   );
 }
@@ -108,10 +162,13 @@ function WeightsEcho({ weights, label }) {
 function breakdownTitle(entry, t) {
   const b = entry.breakdown;
   const fixtureNote = b.fixture.note ? ` (${t(FIXTURE_NOTE_LABEL_KEY[b.fixture.note])})` : '';
+  const availabilitySuffix =
+    b.availability.multiplier < 1 ? ` · ${t('sug.availabilityChipTitle', { pct: b.availability.pct })}` : '';
   return (
     `${t('weights.form')} ${pct(b.form.weight)}: ${b.form.raw} → ${b.form.normalized} · ` +
     `${t('weights.fixtures')} ${pct(b.fixture.weight)}: ${b.fixture.raw} → ${b.fixture.normalized}${fixtureNote} · ` +
     `${t('weights.value')} ${pct(b.value.weight)}: ${b.value.raw} → ${b.value.normalized} · ` +
+    `${t('weights.underlying')} ${pct(b.underlying.weight)}: ${b.underlying.raw} → ${b.underlying.normalized}${availabilitySuffix} · ` +
     `score = ${entry.score}`
   );
 }
@@ -127,7 +184,7 @@ function ScanRow({ row, t }) {
       </td>
       <td className="name" title={breakdownTitle(current, t)} data-label={t('sug.scanCurrent')}>
         {current.name} <span className="muted">£{current.price.toFixed(2)}m</span>
-        <EventFlagBadge blankEvent={current.blankEvent} dgwEvent={current.dgwEvent} t={t} />
+        <PlayerFlags p={current} t={t} />
       </td>
       <td className="num" data-label={t('sug.currentScore')}>{current.score.toFixed(1)}</td>
       <td className="arrow-cell">→</td>
@@ -135,7 +192,7 @@ function ScanRow({ row, t }) {
         <>
           <td className="name" title={breakdownTitle(suggestion, t)} data-label={t('sug.scanSuggested')}>
             {suggestion.name} <span className="muted">({suggestion.teamShort}, £{suggestion.price.toFixed(2)}m)</span>
-            <EventFlagBadge blankEvent={suggestion.blankEvent} dgwEvent={suggestion.dgwEvent} t={t} />
+            <PlayerFlags p={suggestion} t={t} />
           </td>
           <td className="num" data-label={t('sug.suggestedScore')}>{suggestion.score.toFixed(1)}</td>
           <td data-label={t('table.next3fdr')}>
@@ -244,7 +301,12 @@ export default function SuggestionsView() {
   }, []);
 
   const squadPlayers = squad?.squad ?? [];
-  const weightsLabels = { formLabel: t('weights.form'), fixturesLabel: t('weights.fixtures'), valueLabel: t('weights.value') };
+  const weightsLabels = {
+    formLabel: t('weights.form'),
+    fixturesLabel: t('weights.fixtures'),
+    valueLabel: t('weights.value'),
+    underlyingLabel: t('weights.underlying'),
+  };
 
   return (
     <div className="flex flex-col gap-6">

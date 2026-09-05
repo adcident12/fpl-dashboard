@@ -141,6 +141,11 @@ const STRINGS = {
     'sug.blankEventTitle': 'No fixture this gameweek — guaranteed 0 points. Fixture score forced to 0.',
     'sug.dgwEventBadge': 'DGW ×2',
     'sug.dgwEventTitle': 'Double Gameweek — 2 fixtures this gameweek. Fixture score gets a bonus for the extra scoring chance.',
+    'sug.availabilityBadge': '{{pct}}%',
+    'sug.availabilityTitle': 'Chance of playing: {{pct}}%. The score is scaled down by this percentage.',
+    'sug.availabilityChipTitle': 'Score scaled by {{pct}}% chance of playing',
+    'sug.penaltyTakerBadge': '⚽ Pen 1',
+    'sug.penaltyTakerTitle': "Club's first-choice penalty taker (not weighted into the score — penalty count is too unpredictable to model).",
 
     'chips.loading': 'Loading chip plan…',
     'chips.title': 'Chip windows',
@@ -168,6 +173,8 @@ const STRINGS = {
     'weights.form': 'Form',
     'weights.fixtures': 'Fixtures',
     'weights.value': 'Value',
+    'weights.underlying': 'Underlying (xGI/90)',
+    'weights.availability': 'Availability',
 
     'lang.toggle': 'ไทย',
   },
@@ -307,6 +314,11 @@ const STRINGS = {
     'sug.blankEventTitle': 'ไม่มีนัดแข่งในสัปดาห์นี้ — ได้ 0 แต้มแน่นอน คะแนนด้าน fixture ถูกบังคับให้เป็น 0',
     'sug.dgwEventBadge': 'DGW ×2',
     'sug.dgwEventTitle': 'Double Gameweek — มี 2 นัดในสัปดาห์นี้ คะแนนด้าน fixture ได้โบนัสเพิ่มจากโอกาสทำแต้ม 2 ครั้ง',
+    'sug.availabilityBadge': '{{pct}}%',
+    'sug.availabilityTitle': 'โอกาสลงเล่น: {{pct}}% — คะแนนถูกลดลงตามเปอร์เซ็นต์นี้',
+    'sug.availabilityChipTitle': 'คะแนนถูกคูณด้วยโอกาสลงเล่น {{pct}}%',
+    'sug.penaltyTakerBadge': '⚽ จุดโทษ 1',
+    'sug.penaltyTakerTitle': 'มือยิงจุดโทษอันดับ 1 ของทีม (ไม่ถูกเอาไปคิดคะแนน เพราะจำนวนจุดโทษที่ทีมจะได้คาดเดายากเกินไป)',
 
     'chips.loading': 'กำลังโหลดแผน chip…',
     'chips.title': 'ช่วงเวลาใช้ Chip',
@@ -334,6 +346,8 @@ const STRINGS = {
     'weights.form': 'ฟอร์ม',
     'weights.fixtures': 'โปรแกรมแข่ง',
     'weights.value': 'ความคุ้มค่า',
+    'weights.underlying': 'สถิติเบื้องหลัง (xGI/90)',
+    'weights.availability': 'โอกาสลงเล่น',
 
     'lang.toggle': 'EN',
   },

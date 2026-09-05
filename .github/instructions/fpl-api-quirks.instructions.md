@@ -29,11 +29,23 @@ These mappings were verified against a **real** `bootstrap-static` / `fixtures` 
 | Value (form) | `value_form` | **String**. |
 | ICT index | `ict_index` | **String**. |
 | xG / xA | `expected_goals`, `expected_assists` | **Strings**. |
+| xG+xA per 90 | `expected_goal_involvements_per_90` | **String**. Verified 2026-09-05. Unreliable at low sample size — see "Chance of playing / availability" below for the same caveat pattern applied to `minutes`. |
+| Minutes played | `minutes` | Number, season-to-date total (not per-game). |
 | Transfers in/out | `transfers_in`, `transfers_out` | Numbers (all-time). |
 | Status | `status` | `"a"` available, `"i"` injured, `"d"` doubt, `"s"` suspended, `"u"` unavailable. |
 | News | `news` | Free text, may be `""`. |
 | Name | `first_name`, `second_name`, `web_name` | Display name = `web_name` (fallback `first_name + " " + second_name`). |
 | ID | `id` | Used in `element-summary/{id}` and picks. |
+
+### Chance of playing / availability
+- `chance_of_playing_this_round`, `chance_of_playing_next_round` — **nullable number**, 0/25/50/75/100. Verified 2026-09-05: `null` means **no fitness doubt at all** (equivalent to 100), not "unknown" — a player with `status: "a"` and no injury has both fields `null`. Do not use `||` to default a `null` here (`0` is a real, valid value meaning "definitely not playing"); use `??`.
+- This app reads `chance_of_playing_this_round`, falling back to `chance_of_playing_next_round`, falling back to 100 — see `buildData()`'s `availabilityPct`.
+
+### Set-piece order
+- `penalties_order`, `direct_freekicks_order`, `corners_and_indirect_freekicks_order` — nullable number, `1` = the club's current first-choice taker for that set piece. Verified 2026-09-05 (e.g. Haaland: `penalties_order: 1`). Only `penalties_order` is used in this app (as an informational badge, never weighted into a score) — the other two aren't fetched at all since there's no current consumer for them.
+
+### Per-90 stats and small-sample distortion
+`*_per_90` fields (e.g. `expected_goal_involvements_per_90`) are a straight extrapolation (`total / (minutes/90)`) and blow up at low minutes. Verified 2026-09-05: a player with 1 minute played and a 0.17 total xGI contribution showed `expected_goal_involvements_per_90: 15.3` — nonsensical next to a real elite striker's ~1.0-1.5. **Always gate any `*_per_90` field on a minimum-minutes threshold** before using it for comparison/normalization (this app uses `MIN_MINUTES_FOR_XGI = 180` in `server/fpl.js`, both for a player's own normalized value and for excluding them from setting the comparison pool's max).
 
 ## Positions (`element_types[]`)
 - `id` (1-4), `singular_name` ("Goalkeeper"), `plural_name_short` ("GKP"/"DEF"/"MID"/"FWD").
