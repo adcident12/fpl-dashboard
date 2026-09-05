@@ -20,6 +20,12 @@ const STRINGS = {
     'status.loading': 'Loading FPL data…',
     'status.error': 'Error: {{message}}',
 
+    'deadline.label': 'Deadline: {{time}}',
+    'deadline.inDaysHours': '{{days}}d {{hours}}h',
+    'deadline.inHoursMins': '{{hours}}h {{mins}}m',
+    'deadline.inMins': '{{mins}}m',
+    'deadline.passed': 'passed',
+
     'filters.search': 'Search player',
     'filters.searchPlaceholder': 'Player name…',
     'filters.position': 'Position',
@@ -173,6 +179,12 @@ const STRINGS = {
     'time.justNow': 'เมื่อสักครู่',
     'time.minutesAgo': '{{n}} นาทีที่แล้ว',
     'time.hoursAgo': '{{n}} ชม. ที่แล้ว',
+    'deadline.label': 'เดดไลน์: {{time}}',
+    'deadline.inDaysHours': '{{days}}วัน {{hours}}ชม.',
+    'deadline.inHoursMins': '{{hours}}ชม. {{mins}}นาที',
+    'deadline.inMins': '{{mins}}นาที',
+    'deadline.passed': 'ผ่านไปแล้ว',
+
     'status.loading': 'กำลังโหลดข้อมูล FPL…',
     'status.error': 'เกิดข้อผิดพลาด: {{message}}',
 

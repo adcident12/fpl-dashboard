@@ -19,6 +19,21 @@ function formatTimeAgo(fetchedAt, now, t) {
   return t('time.hoursAgo', { n: Math.floor(mins / 60) });
 }
 
+// Countdown to the next transfer/lineup deadline. Same `now` tick as the
+// freshness indicator drives this too — minute-level precision is plenty,
+// no separate per-second interval needed.
+function formatDeadlineCountdown(deadlineEpochMs, now, t) {
+  if (deadlineEpochMs == null) return null;
+  const diff = deadlineEpochMs - now;
+  if (diff <= 0) return t('deadline.passed');
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  if (days > 0) return t('deadline.inDaysHours', { days, hours });
+  if (hours > 0) return t('deadline.inHoursMins', { hours, mins });
+  return t('deadline.inMins', { mins });
+}
+
 export default function App() {
   const { lang, setLang, t } = useLang();
   const [data, setData] = useState(null);
@@ -150,6 +165,20 @@ export default function App() {
           </button>
         </nav>
         <div className="flex items-center gap-3 ml-auto max-sm:w-full max-sm:justify-between">
+          {meta?.nextDeadline && (
+            <span
+              className={`font-display text-xs font-bold tracking-[0.02em] uppercase px-3 py-1.5 rounded-full border cursor-help ${
+                meta.nextDeadline.deadlineEpochMs - now < 3 * 3600000
+                  ? 'text-hard border-hard/40 bg-hard/10'
+                  : meta.nextDeadline.deadlineEpochMs - now < 86400000
+                    ? 'text-med border-med/40 bg-med/10'
+                    : 'text-muted border-line bg-panel-2'
+              }`}
+              title={`${meta.nextDeadline.eventName}: ${new Date(meta.nextDeadline.deadlineEpochMs).toLocaleString()}`}
+            >
+              {t('deadline.label', { time: formatDeadlineCountdown(meta.nextDeadline.deadlineEpochMs, now, t) })}
+            </span>
+          )}
           {meta && (
             <span className="text-muted text-[13px]">
               {t('meta.eventPlayers', { event: meta.currentEventName, count: players.length })}

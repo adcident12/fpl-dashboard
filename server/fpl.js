@@ -118,10 +118,27 @@ export async function buildData() {
       ? Math.min(bootstrapFetchedAt, fixturesFetchedAt)
       : bootstrapFetchedAt ?? fixturesFetchedAt;
 
+  // The gameweek a user still needs to act before — found directly by
+  // deadline time rather than relying on `is_next` (which can be a step
+  // behind right around a deadline), so this stays correct if the game
+  // is between "is_current"/"is_next" transitioning.
+  const now = Date.now();
+  const upcomingDeadlineEvent = bootstrap.events.find(
+    (e) => new Date(e.deadline_time).getTime() > now
+  );
+
   const meta = {
     currentEventId,
     currentEventName: currentEvent?.name ?? null,
     nextEventId: bootstrap.events.find((e) => e.is_next)?.id ?? null,
+    nextDeadline: upcomingDeadlineEvent
+      ? {
+          eventId: upcomingDeadlineEvent.id,
+          eventName: upcomingDeadlineEvent.name,
+          deadlineTime: upcomingDeadlineEvent.deadline_time,
+          deadlineEpochMs: new Date(upcomingDeadlineEvent.deadline_time).getTime(),
+        }
+      : null,
     totalPlayers: bootstrap.total_players,
     positions: Object.entries(POSITION_MAP).map(([id, short]) => ({
       id: Number(id),
