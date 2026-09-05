@@ -34,6 +34,32 @@ function formatDeadlineCountdown(deadlineEpochMs, now, t) {
   return t('deadline.inMins', { mins });
 }
 
+// Tabs whose content is a single self-contained component with no props from
+// App's own state — looked up by key instead of a ternary chain. "players"
+// isn't here: it's the fallback (the big inline block below) since it reads
+// App's own filter/sort state directly.
+const TAB_VIEWS = {
+  fixtures: <FixtureGrid />,
+  squad: <SquadView />,
+  suggestions: <SuggestionsView />,
+  chips: <ChipsView />,
+};
+
+const TABS = [
+  { key: 'players', labelKey: 'nav.players' },
+  { key: 'fixtures', labelKey: 'nav.fixtures' },
+  { key: 'squad', labelKey: 'nav.squad' },
+  { key: 'suggestions', labelKey: 'nav.suggestions' },
+  { key: 'chips', labelKey: 'nav.chips' },
+];
+
+// Deadline countdown badge color: red under 3h left, amber under 24h, muted otherwise.
+function deadlineUrgencyClass(msRemaining) {
+  if (msRemaining < 3 * 3600000) return 'text-hard border-hard/40 bg-hard/10';
+  if (msRemaining < 86400000) return 'text-med border-med/40 bg-med/10';
+  return 'text-muted border-line bg-panel-2';
+}
+
 export default function App() {
   const { lang, setLang, t } = useLang();
   const [data, setData] = useState(null);
@@ -133,47 +159,21 @@ export default function App() {
           {t('app.title')}
         </h1>
         <nav className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px]">
-          <button
-            className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === 'players' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
-            onClick={() => setTab('players')}
-          >
-            {t('nav.players')}
-          </button>
-          <button
-            className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === 'fixtures' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
-            onClick={() => setTab('fixtures')}
-          >
-            {t('nav.fixtures')}
-          </button>
-          <button
-            className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === 'squad' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
-            onClick={() => setTab('squad')}
-          >
-            {t('nav.squad')}
-          </button>
-          <button
-            className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === 'suggestions' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
-            onClick={() => setTab('suggestions')}
-          >
-            {t('nav.suggestions')}
-          </button>
-          <button
-            className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === 'chips' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
-            onClick={() => setTab('chips')}
-          >
-            {t('nav.chips')}
-          </button>
+          {TABS.map((tb) => (
+            <button
+              key={tb.key}
+              type="button"
+              className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === tb.key ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+              onClick={() => setTab(tb.key)}
+            >
+              {t(tb.labelKey)}
+            </button>
+          ))}
         </nav>
         <div className="flex items-center gap-3 ml-auto max-sm:w-full max-sm:justify-between">
           {meta?.nextDeadline && (
             <span
-              className={`font-display text-xs font-bold tracking-[0.02em] uppercase px-3 py-1.5 rounded-full border cursor-help ${
-                meta.nextDeadline.deadlineEpochMs - now < 3 * 3600000
-                  ? 'text-hard border-hard/40 bg-hard/10'
-                  : meta.nextDeadline.deadlineEpochMs - now < 86400000
-                    ? 'text-med border-med/40 bg-med/10'
-                    : 'text-muted border-line bg-panel-2'
-              }`}
+              className={`font-display text-xs font-bold tracking-[0.02em] uppercase px-3 py-1.5 rounded-full border cursor-help ${deadlineUrgencyClass(meta.nextDeadline.deadlineEpochMs - now)}`}
               title={`${meta.nextDeadline.eventName}: ${new Date(meta.nextDeadline.deadlineEpochMs).toLocaleString()}`}
             >
               {t('deadline.label', { time: formatDeadlineCountdown(meta.nextDeadline.deadlineEpochMs, now, t) })}
@@ -193,6 +193,7 @@ export default function App() {
             </span>
           )}
           <button
+            type="button"
             onClick={() => setLang(lang === 'en' ? 'th' : 'en')}
             className="bg-panel border border-line text-text font-display font-bold text-xs tracking-[0.04em] px-3.5 py-1.5 rounded-full cursor-pointer transition-colors hover:border-accent hover:text-accent"
           >
@@ -201,15 +202,7 @@ export default function App() {
         </div>
       </header>
 
-      {tab === 'fixtures' ? (
-        <FixtureGrid />
-      ) : tab === 'squad' ? (
-        <SquadView />
-      ) : tab === 'suggestions' ? (
-        <SuggestionsView />
-      ) : tab === 'chips' ? (
-        <ChipsView />
-      ) : (
+      {TAB_VIEWS[tab] ?? (
         <>
       <div className="filters flex flex-wrap items-center gap-4 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 max-sm:flex-col max-sm:items-stretch">
         <label className="flex flex-col gap-1 text-xs text-muted">

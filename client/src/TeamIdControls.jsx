@@ -28,6 +28,7 @@ export function TeamIdInput({ value, onChangeValue, onLoad, loading }) {
         />
       </label>
       <button
+        type="button"
         onClick={() => submit(value)}
         disabled={loading || !value.trim()}
         className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"

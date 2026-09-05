@@ -84,15 +84,15 @@ export async function buildData() {
       positionId: el.element_type,
       position: POSITION_MAP[el.element_type] ?? '?',
       price: el.now_cost / 10, // now_cost is in hundreds of thousands -> £m
-      form: parseFloat(el.form),
+      form: Number.parseFloat(el.form),
       totalPoints: el.total_points,
-      pointsPerGame: parseFloat(el.points_per_game),
-      valueSeason: parseFloat(el.value_season), // points per million
-      valueForm: parseFloat(el.value_form),
-      ownership: parseFloat(el.selected_by_percent),
-      ictIndex: parseFloat(el.ict_index),
-      xG: parseFloat(el.expected_goals),
-      xA: parseFloat(el.expected_assists),
+      pointsPerGame: Number.parseFloat(el.points_per_game),
+      valueSeason: Number.parseFloat(el.value_season), // points per million
+      valueForm: Number.parseFloat(el.value_form),
+      ownership: Number.parseFloat(el.selected_by_percent),
+      ictIndex: Number.parseFloat(el.ict_index),
+      xG: Number.parseFloat(el.expected_goals),
+      xA: Number.parseFloat(el.expected_assists),
       status: el.status,
       news: el.news,
       transfersIn: el.transfers_in,
@@ -625,6 +625,80 @@ export async function buildCaptainSuggestions(teamId, eventId) {
 const CHIP_EXPIRY_WARNING_GWS = 3;
 const CHIP_LABEL = { wildcard: 'Wildcard', freehit: 'Free Hit', bboost: 'Bench Boost', '3xc': 'Triple Captain' };
 
+// One label the client can switch on directly, instead of re-deriving it
+// from the boolean/numeric fields on a chip window (which stay too, for the
+// detail view).
+function chipWindowStatus({ used, expiringSoon, availableNow, currentEventId, startEvent }) {
+  if (used) return 'used';
+  if (expiringSoon) return 'expiringSoon';
+  if (availableNow) return 'available';
+  if (currentEventId < startEvent) return 'upcoming';
+  return 'expired';
+}
+
+// Bench Boost: worth it when all 4 bench players have an easy-ish next
+// fixture and are actually expected to play (status 'a' = available).
+function benchBoostRecommendation(ctx) {
+  const bench = (ctx.picks.picks ?? [])
+    .filter((pk) => pk.position >= 12)
+    .map((pk) => ctx.byId.get(pk.element))
+    .filter(Boolean);
+  if (bench.length !== 4) return null;
+  const fdrs = bench.map((p) => p.nextFixtures?.[0]?.difficulty ?? 5);
+  const allFit = bench.every((p) => p.status === 'a') && fdrs.every((d) => d <= 3);
+  if (!allFit) return null;
+  return {
+    chip: 'bboost',
+    label: CHIP_LABEL.bboost,
+    reason: 'benchAllFit',
+    detail: { avgFDR: round1(fdrs.reduce((s, d) => s + d, 0) / fdrs.length) },
+  };
+}
+
+// Triple Captain: worth it when the squad's best-scoring starter (by the
+// existing captain formula) also has a particularly easy fixture this gameweek.
+async function tripleCaptainRecommendation(teamId, eventId) {
+  const captainPlan = await buildCaptainSuggestions(teamId, eventId);
+  const top = captainPlan.candidates[0];
+  if (top?.nextFDR == null || top.nextFDR > 2) return null;
+  return {
+    chip: '3xc',
+    label: CHIP_LABEL['3xc'],
+    reason: 'topCaptainEasyFixture',
+    detail: { player: top.name, teamShort: top.teamShort, nextFDR: top.nextFDR, nextOpponent: top.nextOpponent },
+  };
+}
+
+// Free Hit: worth it when several of the user's own 15 squad members have a
+// blank in the very next gameweek (their whole team has no fixture).
+function freeHitRecommendation(ctx, fixtureGrid, currentEventId) {
+  const squadTeamIds = new Set([...ctx.squadIds].map((id) => ctx.byId.get(id)?.teamId).filter(Boolean));
+  const nextEventId = fixtureGrid.gameweeks[0]?.id ?? currentEventId;
+  const blankTeams = fixtureGrid.blanks.filter((b) => b.event === nextEventId && squadTeamIds.has(b.teamId));
+  if (blankTeams.length < 2) return null;
+  return {
+    chip: 'freehit',
+    label: CHIP_LABEL.freehit,
+    reason: 'squadBlankGameweek',
+    detail: { event: nextEventId, teams: blankTeams.map((b) => b.teamShort) },
+  };
+}
+
+// Wildcard: worth it when a large chunk of the starting XI is flagged as an
+// upgrade candidate by the squad scan — i.e. the squad broadly needs
+// rebuilding, not just a one-off swap.
+async function wildcardRecommendation(teamId, eventId) {
+  const scan = await buildSquadScan(teamId, eventId);
+  const upgrades = scan.rows.filter((r) => r.verdict === 'upgrade');
+  if (upgrades.length < 4) return null;
+  return {
+    chip: 'wildcard',
+    label: CHIP_LABEL.wildcard,
+    reason: 'squadNeedsRebuild',
+    detail: { upgradeCount: upgrades.length, totalStarting: scan.rows.length },
+  };
+}
+
 /**
  * Phase 5 — chip planning helper.
  * `bootstrap.chips[]` is the authoritative window for each of the 8 chip
@@ -651,17 +725,7 @@ export async function buildChipPlan(teamId, eventId) {
     const availableNow = isCurrentWindow && !used;
     const eventsRemaining = isCurrentWindow ? c.stop_event - currentEventId : null;
     const expiringSoon = availableNow && eventsRemaining <= CHIP_EXPIRY_WARNING_GWS;
-    // One label the client can switch on directly, instead of re-deriving
-    // it from the boolean/numeric fields (which stay too, for the detail view).
-    const status = used
-      ? 'used'
-      : expiringSoon
-        ? 'expiringSoon'
-        : availableNow
-          ? 'available'
-          : currentEventId < c.start_event
-            ? 'upcoming'
-            : 'expired';
+    const status = chipWindowStatus({ used, expiringSoon, availableNow, currentEventId, startEvent: c.start_event });
     return {
       name: c.name,
       label: CHIP_LABEL[c.name] ?? c.name,
@@ -678,72 +742,21 @@ export async function buildChipPlan(teamId, eventId) {
   const availableByName = new Map(windows.filter((w) => w.availableNow).map((w) => [w.name, w]));
   const recommendations = [];
 
-  // Bench Boost: worth it when all 4 bench players have an easy-ish next
-  // fixture and are actually expected to play (status 'a' = available).
   if (availableByName.has('bboost')) {
-    const bench = (ctx.picks.picks ?? [])
-      .filter((pk) => pk.position >= 12)
-      .map((pk) => ctx.byId.get(pk.element))
-      .filter(Boolean);
-    if (bench.length === 4) {
-      const fdrs = bench.map((p) => p.nextFixtures?.[0]?.difficulty ?? 5);
-      const allFit = bench.every((p) => p.status === 'a') && fdrs.every((d) => d <= 3);
-      if (allFit) {
-        recommendations.push({
-          chip: 'bboost',
-          label: CHIP_LABEL.bboost,
-          reason: 'benchAllFit',
-          detail: { avgFDR: round1(fdrs.reduce((s, d) => s + d, 0) / fdrs.length) },
-        });
-      }
-    }
+    const rec = benchBoostRecommendation(ctx);
+    if (rec) recommendations.push(rec);
   }
-
-  // Triple Captain: worth it when the squad's best-scoring starter (by the
-  // existing captain formula) also has a particularly easy next fixture.
   if (availableByName.has('3xc')) {
-    const captainPlan = await buildCaptainSuggestions(teamId, eventId);
-    const top = captainPlan.candidates[0];
-    if (top && top.nextFDR != null && top.nextFDR <= 2) {
-      recommendations.push({
-        chip: '3xc',
-        label: CHIP_LABEL['3xc'],
-        reason: 'topCaptainEasyFixture',
-        detail: { player: top.name, teamShort: top.teamShort, nextFDR: top.nextFDR, nextOpponent: top.nextOpponent },
-      });
-    }
+    const rec = await tripleCaptainRecommendation(teamId, eventId);
+    if (rec) recommendations.push(rec);
   }
-
-  // Free Hit: worth it when several of the user's own 15 squad members have
-  // a blank in the very next gameweek (their whole team has no fixture).
   if (availableByName.has('freehit')) {
-    const squadTeamIds = new Set([...ctx.squadIds].map((id) => ctx.byId.get(id)?.teamId).filter(Boolean));
-    const nextEventId = fixtureGrid.gameweeks[0]?.id ?? currentEventId;
-    const blankTeams = fixtureGrid.blanks.filter((b) => b.event === nextEventId && squadTeamIds.has(b.teamId));
-    if (blankTeams.length >= 2) {
-      recommendations.push({
-        chip: 'freehit',
-        label: CHIP_LABEL.freehit,
-        reason: 'squadBlankGameweek',
-        detail: { event: nextEventId, teams: blankTeams.map((b) => b.teamShort) },
-      });
-    }
+    const rec = freeHitRecommendation(ctx, fixtureGrid, currentEventId);
+    if (rec) recommendations.push(rec);
   }
-
-  // Wildcard: worth it when a large chunk of the starting XI is flagged as
-  // an upgrade candidate by the squad scan — i.e. the squad broadly needs
-  // rebuilding, not just a one-off swap.
   if (availableByName.has('wildcard')) {
-    const scan = await buildSquadScan(teamId, eventId);
-    const upgrades = scan.rows.filter((r) => r.verdict === 'upgrade');
-    if (upgrades.length >= 4) {
-      recommendations.push({
-        chip: 'wildcard',
-        label: CHIP_LABEL.wildcard,
-        reason: 'squadNeedsRebuild',
-        detail: { upgradeCount: upgrades.length, totalStarting: scan.rows.length },
-      });
-    }
+    const rec = await wildcardRecommendation(teamId, eventId);
+    if (rec) recommendations.push(rec);
   }
 
   return {

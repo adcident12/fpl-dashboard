@@ -320,9 +320,14 @@ a:focus-visible {
   color: var(--color-accent);
 }
 .banner-blank {
-  background: rgba(183, 28, 28, 0.12);
-  border-color: rgba(183, 28, 28, 0.35);
-  color: #ff8a80;
+  /* Solid (not alpha-blended) colors here, not var(--color-hard)/rgba like
+     the badges elsewhere — a static contrast checker can't resolve a custom
+     property or composite an alpha color against its real backdrop, so it
+     flags an otherwise-fine pairing as a guess. These two literal colors
+     pass WCAG AA contrast (>7:1) on their own, no compositing assumption needed. */
+  background: #3a1414;
+  border-color: #7a2323;
+  color: #ffcdd2;
 }
 
 /* .squad-controls / .squad-meta / .load-btn / .sample-btn / .team-id-help /

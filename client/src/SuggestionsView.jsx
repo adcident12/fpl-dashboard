@@ -11,15 +11,19 @@ function pct(w) {
   return `${Math.round(w * 100)}%`;
 }
 
+// comp.note / breakdown.fixture.note ('blank'/'double', fixture component
+// only) means the raw average FDR was overridden — see server/fpl.js's
+// scoreTransferComponents — shared by ComponentChip and breakdownTitle so
+// both surface it instead of just showing the adjusted number silently.
+const FIXTURE_NOTE_LABEL_KEY = { blank: 'sug.blankEventBadge', double: 'sug.dgwEventBadge' };
+
 // One weighted component, shown as "raw → normalized (weight) = points".
-// `comp.note` ('blank'/'double', fixture component only) means the raw
-// average FDR was overridden — see server/fpl.js's scoreTransferComponents —
-// so the tooltip and an inline flag both say so instead of just showing the
-// adjusted number with no explanation (never a black box).
 function ComponentChip({ label, comp, t }) {
-  const noteText = comp.note === 'blank' ? t('sug.blankEventBadge') : comp.note === 'double' ? t('sug.dgwEventBadge') : null;
+  const noteText = comp.note ? t(FIXTURE_NOTE_LABEL_KEY[comp.note]) : null;
+  const noteSuffix = noteText ? ` (${noteText})` : '';
+  const title = `${label}: ${comp.raw} → ${comp.normalized} × ${comp.weight} = ${comp.points}${noteSuffix}`;
   return (
-    <span className="chip" title={`${label}: ${comp.raw} → ${comp.normalized} × ${comp.weight} = ${comp.points}${noteText ? ` (${noteText})` : ''}`}>
+    <span className="chip" title={title}>
       <span className="chip-label">{label} {pct(comp.weight)}</span>
       <span className="chip-vals">
         {comp.raw} → {comp.normalized}
@@ -103,7 +107,7 @@ function WeightsEcho({ weights, label }) {
 // would be too tall for a quick scan.
 function breakdownTitle(entry, t) {
   const b = entry.breakdown;
-  const fixtureNote = b.fixture.note === 'blank' ? ` (${t('sug.blankEventBadge')})` : b.fixture.note === 'double' ? ` (${t('sug.dgwEventBadge')})` : '';
+  const fixtureNote = b.fixture.note ? ` (${t(FIXTURE_NOTE_LABEL_KEY[b.fixture.note])})` : '';
   return (
     `${t('weights.form')} ${pct(b.form.weight)}: ${b.form.raw} → ${b.form.normalized} · ` +
     `${t('weights.fixtures')} ${pct(b.fixture.weight)}: ${b.fixture.raw} → ${b.fixture.normalized}${fixtureNote} · ` +
@@ -279,12 +283,14 @@ export default function SuggestionsView() {
               <>
                 <div className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px] mb-2.5">
                   <button
+                    type="button"
                     className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${pitchMode === 'current' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
                     onClick={() => setPitchMode('current')}
                   >
                     {t('sug.pitchCurrent')}
                   </button>
                   <button
+                    type="button"
                     className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${pitchMode === 'suggested' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
                     onClick={() => setPitchMode('suggested')}
                   >
@@ -350,6 +356,7 @@ export default function SuggestionsView() {
                 </select>
               </label>
               <button
+                type="button"
                 onClick={loadTransfers}
                 disabled={!replaceId || transferLoading}
                 className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"

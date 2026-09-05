@@ -10,9 +10,11 @@ const SIZE = {
 };
 
 export function Spinner({ size = 'md', className = '' }) {
+  // Purely decorative — aria-hidden removes it from the accessibility tree
+  // entirely, so no status/live-region role belongs here at all (the actual
+  // accessible text is LoadingState's <span>, or a loading button's own label).
   return (
     <span
-      role="status"
       aria-hidden="true"
       className={`inline-block rounded-full border-line border-t-accent motion-safe:animate-spin ${SIZE[size]} ${className}`}
     />
