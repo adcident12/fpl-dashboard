@@ -268,6 +268,62 @@ a:focus-visible {
 .cell.done {
   opacity: 0.55;
 }
+.cell.blank-cell {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  min-height: 46px;
+}
+.cell-dgw {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  padding-top: 10px;
+}
+.cell-dgw .cell {
+  min-height: 34px;
+  border-radius: 4px;
+}
+.dgw-tag {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #111;
+  background: var(--color-accent-2);
+  border-radius: 4px;
+  padding: 1px 4px;
+  z-index: 1;
+}
+
+.dgw-bgw-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.banner-row {
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.banner-double {
+  background: rgba(79, 140, 255, 0.12);
+  border-color: rgba(79, 140, 255, 0.35);
+  color: var(--color-accent);
+}
+.banner-blank {
+  background: rgba(183, 28, 28, 0.12);
+  border-color: rgba(183, 28, 28, 0.35);
+  color: #ff8a80;
+}
 
 /* .squad-controls / .squad-meta / .load-btn / .sample-btn / .team-id-help /
    .team-id-controls removed — every component that used them (TeamIdControls,

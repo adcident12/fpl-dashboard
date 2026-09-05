@@ -61,6 +61,10 @@ const STRINGS = {
     'fixtures.fdr4': '4 · hard',
     'fixtures.fdr5': '5 · hardest',
     'fixtures.note': 'v = home, @ = away. FDR 1–5 (5 = hardest). Scores shown for finished matches.',
+    'fixtures.blank': 'BLANK',
+    'fixtures.dgwTag': 'DGW',
+    'fixtures.doublesBanner': 'Double Gameweek: {{teams}} play twice in {{gw}}',
+    'fixtures.blanksBanner': 'Blank Gameweek: {{teams}} have no fixture in {{gw}}',
 
     'fdr.easy': 'Easy',
     'fdr.med': 'Med',
@@ -190,6 +194,10 @@ const STRINGS = {
     'fixtures.fdr4': '4 · ยาก',
     'fixtures.fdr5': '5 · ยากที่สุด',
     'fixtures.note': 'v = เหย้า, @ = เยือน FDR 1–5 (5 = ยากสุด) นัดที่จบแล้วจะโชว์สกอร์',
+    'fixtures.blank': 'ไม่มีนัด',
+    'fixtures.dgwTag': 'DGW',
+    'fixtures.doublesBanner': 'Double Gameweek: {{teams}} ลงเล่น 2 นัดใน {{gw}}',
+    'fixtures.blanksBanner': 'Blank Gameweek: {{teams}} ไม่มีนัดใน {{gw}}',
 
     'fdr.easy': 'ง่าย',
     'fdr.med': 'กลาง',

@@ -135,6 +135,15 @@ export async function buildData() {
  * Phase 2 — fixture difficulty grid.
  * Teams x next 5 gameweeks (current GW + next 4), each cell with opponent,
  * home/away, FDR (1-5), and score if the match is already done.
+ *
+ * Each cell is an ARRAY of fixtures, not a single fixture — a team can have
+ * 0 fixtures in a gameweek (Blank Gameweek, postponements/cup clashes) or 2+
+ * (Double Gameweek, a postponed match rescheduled into another gameweek).
+ * An earlier version used `fixtures.find()` here, which silently dropped the
+ * second match of a double gameweek — a real, high-stakes planning blind
+ * spot (DGWs/BGWs swing scores more than almost anything else in FPL).
+ * `doubles`/`blanks` summarize the visible window so the UI can surface a
+ * banner without every consumer re-deriving it from the grid.
  */
 export async function buildFixtureGrid() {
   const [bootstrap, fixtures] = await Promise.all([getBootstrap(), getFixtures()]);
@@ -148,33 +157,42 @@ export async function buildFixtureGrid() {
     gameweeks.push({ id: currentEventId + i, name: ev?.name ?? `Gameweek ${currentEventId + i}` });
   }
 
+  const doubles = [];
+  const blanks = [];
+
   const grid = bootstrap.teams.map((t) => {
     const rows = gameweeks.map((gw) => {
-      const f = fixtures.find(
+      const matches = fixtures.filter(
         (x) => x.event === gw.id && (x.team_h === t.id || x.team_a === t.id)
       );
-      if (!f) return null;
-      const home = f.team_h === t.id;
-      const oppId = home ? f.team_a : f.team_h;
-      const opp = teams.get(oppId);
-      return {
-        event: gw.id,
-        opponentId: oppId,
-        opponentShort: opp?.short_name ?? '?',
-        opponentName: opp?.name ?? '?',
-        home,
-        difficulty: home ? f.team_h_difficulty : f.team_a_difficulty,
-        // Quirk: in-progress matches have finished=false but finished_provisional=true
-        // with scores already present.
-        done: f.finished || f.finished_provisional,
-        scoreFor: home ? f.team_h_score : f.team_a_score,
-        scoreAgainst: home ? f.team_a_score : f.team_h_score,
-      };
+      if (matches.length === 0) {
+        blanks.push({ teamId: t.id, teamShort: t.short_name, event: gw.id });
+      } else if (matches.length >= 2) {
+        doubles.push({ teamId: t.id, teamShort: t.short_name, event: gw.id, count: matches.length });
+      }
+      return matches.map((f) => {
+        const home = f.team_h === t.id;
+        const oppId = home ? f.team_a : f.team_h;
+        const opp = teams.get(oppId);
+        return {
+          event: gw.id,
+          opponentId: oppId,
+          opponentShort: opp?.short_name ?? '?',
+          opponentName: opp?.name ?? '?',
+          home,
+          difficulty: home ? f.team_h_difficulty : f.team_a_difficulty,
+          // Quirk: in-progress matches have finished=false but finished_provisional=true
+          // with scores already present.
+          done: f.finished || f.finished_provisional,
+          scoreFor: home ? f.team_h_score : f.team_a_score,
+          scoreAgainst: home ? f.team_a_score : f.team_h_score,
+        };
+      });
     });
     return { id: t.id, name: t.name, shortName: t.short_name, fixtures: rows };
   });
 
-  return { gameweeks, teams: grid, currentEventId };
+  return { gameweeks, teams: grid, currentEventId, doubles, blanks };
 }
 
 /**
