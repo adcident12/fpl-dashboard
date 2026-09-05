@@ -47,20 +47,13 @@ body {
   color: var(--color-text);
 }
 
-.status {
-  padding: 40px;
-  text-align: center;
-  color: var(--color-muted);
-}
-.status.error {
-  color: #ff8a80;
-}
-
-/* .app / .topbar / .lang-toggle / .meta-freshness / .filters' own layout are
-   gone — App.jsx now uses Tailwind utilities directly for all of that. What's
-   left below (.filters select, the checkbox-as-toggle-switch) stays hand-written
-   because it overrides native <select>/<input type=checkbox> pseudo-elements
-   (custom arrow image, ::after thumb) — see the note in CLAUDE.md. */
+/* .status/.status.error removed — every screen now uses Tailwind utilities
+   directly for loading/error text (see LoadingSpinner.jsx for the shared
+   loading treatment). Same for .app / .topbar / .lang-toggle / .meta-freshness
+   / .filters' own layout. What's left below (.filters select, the
+   checkbox-as-toggle-switch) stays hand-written because it overrides native
+   <select>/<input type=checkbox> pseudo-elements (custom arrow image, ::after
+   thumb) — see the note in CLAUDE.md. */
 .filters select,
 .sug-controls select {
   appearance: none;

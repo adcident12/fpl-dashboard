@@ -4,6 +4,7 @@ import { useTeamId } from './useTeamId.js';
 import { TeamIdInput, TeamIdEmptyState, SAMPLE_TEAM_ID } from './TeamIdControls.jsx';
 import PitchView from './PitchView.jsx';
 import FdrBadges from './FdrBadges.jsx';
+import LoadingState, { Spinner } from './LoadingSpinner.jsx';
 import { useLang } from './i18n.jsx';
 
 function pct(w) {
@@ -229,6 +230,8 @@ export default function SuggestionsView() {
         </div>
       )}
 
+      {squadLoading && !squad && <LoadingState label={t('squad.loading')} />}
+
       {!squadError && squad && (
         <>
           {/* ---- Quick squad scan ---- */}
@@ -263,7 +266,7 @@ export default function SuggestionsView() {
               </>
             )}
 
-            {scanLoading && <div className="py-10 text-center text-muted">{t('sug.scanning')}</div>}
+            {scanLoading && <LoadingState size="md" label={t('sug.scanning')} />}
             {scanError && <div className="py-10 text-center text-[#ff8a80]">{scanError}</div>}
 
             {scan && (
@@ -317,8 +320,9 @@ export default function SuggestionsView() {
               <button
                 onClick={loadTransfers}
                 disabled={!replaceId || transferLoading}
-                className="self-end bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
+                className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
               >
+                {transferLoading && <Spinner size="sm" className="border-white/30 border-t-white" />}
                 {transferLoading ? t('sug.scoring') : t('sug.findReplacements')}
               </button>
             </div>
@@ -372,7 +376,7 @@ export default function SuggestionsView() {
               {captain && <WeightsEcho weights={{ ...captain.weights, ...weightsLabels }} label={t('weights.label')} />}
             </div>
 
-            {captainLoading && <div className="py-10 text-center text-muted">{t('sug.captainScoring')}</div>}
+            {captainLoading && <LoadingState size="md" label={t('sug.captainScoring')} />}
             {captainError && <div className="py-10 text-center text-[#ff8a80]">{captainError}</div>}
 
             {captain && (

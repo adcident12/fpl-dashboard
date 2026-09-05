@@ -1,4 +1,5 @@
 import { useLang } from './i18n.jsx';
+import { Spinner } from './LoadingSpinner.jsx';
 
 // A well-known, long-lived public FPL team (id 1) — used only so people without
 // a team ID yet (new to FPL this season) can see the Squad/Suggestions tabs work.
@@ -29,8 +30,9 @@ export function TeamIdInput({ value, onChangeValue, onLoad, loading }) {
       <button
         onClick={() => submit(value)}
         disabled={loading || !value.trim()}
-        className="self-end bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
+        className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
       >
+        {loading && <Spinner size="sm" className="border-white/30 border-t-white" />}
         {loading ? t('teamId.loading') : t('teamId.load')}
       </button>
       <button

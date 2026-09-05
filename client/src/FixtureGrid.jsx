@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchFixtureGrid } from './api.js';
+import LoadingState from './LoadingSpinner.jsx';
 import { useLang } from './i18n.jsx';
 
 // FDR is a 1-5 scale (1=easiest, 5=hardest). One color per level so the
@@ -46,8 +47,8 @@ export default function FixtureGrid() {
     };
   }, []);
 
-  if (error) return <div className="status error">{t('status.error', { message: error })}</div>;
-  if (!data) return <div className="status">{t('fixtures.loading')}</div>;
+  if (error) return <div className="py-10 text-center text-[#ff8a80]">{t('status.error', { message: error })}</div>;
+  if (!data) return <LoadingState label={t('fixtures.loading')} />;
 
   return (
     <div>

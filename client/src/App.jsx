@@ -5,6 +5,7 @@ import SquadView from './SquadView.jsx';
 import SuggestionsView from './SuggestionsView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
+import LoadingState from './LoadingSpinner.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -105,7 +106,7 @@ export default function App() {
     }
   }
 
-  if (loading) return <div className="py-10 text-center text-muted">{t('status.loading')}</div>;
+  if (loading) return <LoadingState label={t('status.loading')} />;
   if (error) return <div className="py-10 text-center text-[#ff8a80]">{t('status.error', { message: error })}</div>;
 
   return (

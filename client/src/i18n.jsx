@@ -84,6 +84,7 @@ const STRINGS = {
     'teamId.empty.noTeam': "Just starting out and don't have a team yet?",
     'teamId.errorHelp': "Check the Team ID — it's the number in your FPL URL (fantasy.premierleague.com/entry/{{teamId}}/). A 404 means the ID doesn't exist.",
 
+    'squad.loading': 'Loading your squad…',
     'squad.startingXI': 'Starting XI',
     'squad.bench': 'Bench',
     'squad.ptsThisGw': 'pts this GW',
@@ -212,6 +213,7 @@ const STRINGS = {
     'teamId.empty.noTeam': 'เพิ่งเริ่มเล่นและยังไม่มีทีม?',
     'teamId.errorHelp': 'ตรวจสอบ Team ID — คือตัวเลขใน URL ของ FPL (fantasy.premierleague.com/entry/{{teamId}}/) ถ้าเจอ 404 แปลว่าไม่มี ID นี้อยู่จริง',
 
+    'squad.loading': 'กำลังโหลดทีมของคุณ…',
     'squad.startingXI': 'ตัวจริง',
     'squad.bench': 'ตัวสำรอง',
     'squad.ptsThisGw': 'คะแนนสัปดาห์นี้',

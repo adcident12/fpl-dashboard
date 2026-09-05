@@ -4,6 +4,7 @@ import { useTeamId } from './useTeamId.js';
 import { TeamIdInput, TeamIdEmptyState, SAMPLE_TEAM_ID } from './TeamIdControls.jsx';
 import PitchView from './PitchView.jsx';
 import FdrBadges from './FdrBadges.jsx';
+import LoadingState from './LoadingSpinner.jsx';
 import { useLang } from './i18n.jsx';
 
 function PlayerRow({ p, t }) {
@@ -88,6 +89,8 @@ export default function SquadView() {
           </div>
         </div>
       )}
+
+      {loading && !data && <LoadingState label={t('squad.loading')} />}
 
       {!error && data && <PitchView squad={data.squad} scan={scan?.rows} />}
 
