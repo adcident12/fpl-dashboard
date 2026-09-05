@@ -7,9 +7,11 @@ import { useLang } from './i18n.jsx';
 // non-positioned element into that chain. It's very likely harmless (a
 // non-positioned ancestor is skipped when resolving an absolute-positioned
 // descendant's containing block), but this exact area has already had two
-// real layout bugs from clip-path/absolute-positioning interactions, and
-// Claude can't visually verify the result in this environment — not worth
-// the risk for a tooltip fix on badges most users glance at without hovering.
+// real layout bugs from clip-path/absolute-positioning interactions — not
+// worth the risk for a tooltip fix on badges most users glance at without
+// hovering, even now that a browser is available to check the result with
+// (verified 2026-09-05: current rendering is correct; this note is about
+// the risk of the *next* change here, not an excuse about unverifiability).
 
 // Deterministic team color so every team gets a stable, distinct jersey color
 // without maintaining a 20-team lookup table (no team-crest/kit assets in this app).

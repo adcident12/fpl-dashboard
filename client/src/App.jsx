@@ -9,6 +9,7 @@ import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
+import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, GuideIcon } from './Icons.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -49,12 +50,12 @@ const TAB_VIEWS = {
 };
 
 const TABS = [
-  { key: 'players', labelKey: 'nav.players' },
-  { key: 'fixtures', labelKey: 'nav.fixtures' },
-  { key: 'squad', labelKey: 'nav.squad' },
-  { key: 'suggestions', labelKey: 'nav.suggestions' },
-  { key: 'chips', labelKey: 'nav.chips' },
-  { key: 'guide', labelKey: 'nav.guide' },
+  { key: 'players', labelKey: 'nav.players', Icon: PlayersIcon },
+  { key: 'fixtures', labelKey: 'nav.fixtures', Icon: FixturesIcon },
+  { key: 'squad', labelKey: 'nav.squad', Icon: SquadIcon },
+  { key: 'suggestions', labelKey: 'nav.suggestions', Icon: SuggestionsIcon },
+  { key: 'chips', labelKey: 'nav.chips', Icon: ChipsIcon },
+  { key: 'guide', labelKey: 'nav.guide', Icon: GuideIcon },
 ];
 
 // Deadline countdown badge color: red under 3h left, amber under 24h, muted otherwise.
@@ -156,13 +157,18 @@ export default function App() {
   if (error) return <div className="py-10 text-center text-[#ff8a80]">{t('status.error', { message: error })}</div>;
 
   return (
-    <div className="max-w-[1200px] mx-auto p-4 max-[900px]:p-3">
-      <header className="flex items-center flex-wrap gap-5 mb-3 max-sm:gap-2.5">
+    <div className="max-w-[1200px] mx-auto p-4 max-[900px]:p-3 max-sm:pb-20">
+      <header className="flex items-center flex-wrap gap-5 mb-3 max-sm:gap-2">
         <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-[0.03em] uppercase m-0">
           <Logo className="w-6 h-6" />
           {t('app.title')}
         </h1>
-        <nav className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px] shadow-sm">
+        {/* Primary nav lives here on tablet/desktop; on mobile it's the fixed
+            bottom tab bar below instead (this row has no width limit of its
+            own, so on a narrow screen 6 tab buttons forced the whole page
+            wider than the viewport rather than wrapping — a real bug found
+            once this could actually be viewed on a phone). */}
+        <nav className="hidden sm:inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px] shadow-sm">
           {TABS.map((tb) => (
             <button
               key={tb.key}
@@ -178,17 +184,20 @@ export default function App() {
           {meta?.nextDeadline && (
             <Tooltip content={`${meta.nextDeadline.eventName}: ${new Date(meta.nextDeadline.deadlineEpochMs).toLocaleString()}`}>
               <span
-                className={`font-display text-xs font-bold tracking-[0.02em] uppercase px-3 py-1.5 rounded-full border shadow-sm ${deadlineUrgencyClass(meta.nextDeadline.deadlineEpochMs - now)}`}
+                className={`whitespace-nowrap font-display text-xs font-bold tracking-[0.02em] uppercase px-3 py-1.5 rounded-full border shadow-sm ${deadlineUrgencyClass(meta.nextDeadline.deadlineEpochMs - now)}`}
               >
                 {t('deadline.label', { time: formatDeadlineCountdown(meta.nextDeadline.deadlineEpochMs, now, t) })}
               </span>
             </Tooltip>
           )}
           {meta && (
-            <span className="text-muted text-[13px]">
-              {t('meta.eventPlayers', { event: meta.currentEventName, count: players.length })}
+            <span className="text-muted text-[13px] whitespace-nowrap">
+              {/* Verbose on tablet/desktop; mobile keeps just the freshness dot
+                  + time, matching a minimal mobile top bar (deadline badge
+                  above already carries the decision-relevant part). */}
+              <span className="max-sm:hidden">{t('meta.eventPlayers', { event: meta.currentEventName, count: players.length })}</span>
               {meta.dataFetchedAt != null && (
-                <Tooltip content={new Date(meta.dataFetchedAt).toLocaleString()} className="hint-underline ml-2.5">
+                <Tooltip content={new Date(meta.dataFetchedAt).toLocaleString()} className="hint-underline max-sm:ml-0 ml-2.5">
                   <span
                     className={`before:content-[''] before:inline-block before:w-1.5 before:h-1.5 before:rounded-full before:mr-1.5 before:align-middle ${now - meta.dataFetchedAt < (meta.dataTtlMs ?? 0) ? 'before:bg-accent-2' : 'before:bg-med'}`}
                   >
@@ -201,12 +210,34 @@ export default function App() {
           <button
             type="button"
             onClick={() => setLang(lang === 'en' ? 'th' : 'en')}
-            className="bg-panel border border-line text-text font-display font-bold text-xs tracking-[0.04em] px-3.5 py-1.5 rounded-full cursor-pointer transition shadow-sm hover:shadow-md hover:border-accent hover:text-accent active:scale-[0.97]"
+            className="whitespace-nowrap bg-panel border border-line text-text font-display font-bold text-xs tracking-[0.04em] px-3.5 py-1.5 rounded-full cursor-pointer transition shadow-sm hover:shadow-md hover:border-accent hover:text-accent active:scale-[0.97]"
           >
             {t('lang.toggle')}
           </button>
         </div>
       </header>
+
+      {/* Mobile primary nav — fixed bottom tab bar (Facebook/most mobile apps'
+          pattern: icon + short label, always reachable, doesn't compete with
+          page content for width). Hidden sm: and up, where the header's own
+          nav takes over. max-sm:pb-20 on the outer wrapper above keeps this
+          from covering the last bit of scrolled content. */}
+      <nav
+        className="hidden max-sm:flex fixed bottom-0 inset-x-0 z-40 bg-panel border-t border-line shadow-[0_-2px_8px_rgba(0,0,0,0.3)]"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        {TABS.map((tb) => (
+          <button
+            key={tb.key}
+            type="button"
+            onClick={() => setTab(tb.key)}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 cursor-pointer transition-colors ${tab === tb.key ? 'text-accent' : 'text-muted'}`}
+          >
+            <tb.Icon className="w-5 h-5" />
+            <span className="font-display text-[10px] font-bold tracking-[0.02em] uppercase">{t(tb.labelKey)}</span>
+          </button>
+        ))}
+      </nav>
 
       {TAB_VIEWS[tab] ?? (
         <>
