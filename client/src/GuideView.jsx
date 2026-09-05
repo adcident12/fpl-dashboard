@@ -31,8 +31,14 @@ function WeightTable({ rows, headers }) {
         <tbody>
           {rows.map((r) => (
             <tr key={r[0]}>
+              {/* r[0]+column-index, not index alone: r is a fixed-shape row
+                  (component name, transfer weight, captain weight) that never
+                  reorders, but two cells in the same row can share the same
+                  text (e.g. "20%" appears in both weight columns for
+                  Underlying) — combining with the row's own key keeps it
+                  unique instead of colliding on equal cell text. */}
               {r.map((cell, i) => (
-                <td key={i} className="py-1.5 pr-3 border-b border-line/50">
+                <td key={`${r[0]}-col${i}`} className="py-1.5 pr-3 border-b border-line/50">
                   {cell}
                 </td>
               ))}
