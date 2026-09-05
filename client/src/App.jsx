@@ -8,6 +8,7 @@ import GuideView from './GuideView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
+import Tooltip from './Tooltip.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -161,12 +162,12 @@ export default function App() {
           <Logo className="w-6 h-6" />
           {t('app.title')}
         </h1>
-        <nav className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px]">
+        <nav className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px] shadow-sm">
           {TABS.map((tb) => (
             <button
               key={tb.key}
               type="button"
-              className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === tb.key ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+              className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-md cursor-pointer transition ${tab === tb.key ? 'bg-accent text-white shadow-sm' : 'bg-transparent text-muted hover:text-text hover:bg-panel-2'}`}
               onClick={() => setTab(tb.key)}
             >
               {t(tb.labelKey)}
@@ -175,30 +176,32 @@ export default function App() {
         </nav>
         <div className="flex items-center gap-3 ml-auto max-sm:w-full max-sm:justify-between">
           {meta?.nextDeadline && (
-            <span
-              className={`font-display text-xs font-bold tracking-[0.02em] uppercase px-3 py-1.5 rounded-full border cursor-help ${deadlineUrgencyClass(meta.nextDeadline.deadlineEpochMs - now)}`}
-              title={`${meta.nextDeadline.eventName}: ${new Date(meta.nextDeadline.deadlineEpochMs).toLocaleString()}`}
-            >
-              {t('deadline.label', { time: formatDeadlineCountdown(meta.nextDeadline.deadlineEpochMs, now, t) })}
-            </span>
+            <Tooltip content={`${meta.nextDeadline.eventName}: ${new Date(meta.nextDeadline.deadlineEpochMs).toLocaleString()}`}>
+              <span
+                className={`font-display text-xs font-bold tracking-[0.02em] uppercase px-3 py-1.5 rounded-full border shadow-sm ${deadlineUrgencyClass(meta.nextDeadline.deadlineEpochMs - now)}`}
+              >
+                {t('deadline.label', { time: formatDeadlineCountdown(meta.nextDeadline.deadlineEpochMs, now, t) })}
+              </span>
+            </Tooltip>
           )}
           {meta && (
             <span className="text-muted text-[13px]">
               {t('meta.eventPlayers', { event: meta.currentEventName, count: players.length })}
               {meta.dataFetchedAt != null && (
-                <span
-                  className={`cursor-help ml-2.5 before:content-[''] before:inline-block before:w-1.5 before:h-1.5 before:rounded-full before:mr-1.5 before:align-middle ${now - meta.dataFetchedAt < (meta.dataTtlMs ?? 0) ? 'before:bg-accent-2' : 'before:bg-med'}`}
-                  title={new Date(meta.dataFetchedAt).toLocaleString()}
-                >
-                  {t('meta.updated', { time: formatTimeAgo(meta.dataFetchedAt, now, t) })}
-                </span>
+                <Tooltip content={new Date(meta.dataFetchedAt).toLocaleString()} className="hint-underline ml-2.5">
+                  <span
+                    className={`before:content-[''] before:inline-block before:w-1.5 before:h-1.5 before:rounded-full before:mr-1.5 before:align-middle ${now - meta.dataFetchedAt < (meta.dataTtlMs ?? 0) ? 'before:bg-accent-2' : 'before:bg-med'}`}
+                  >
+                    {t('meta.updated', { time: formatTimeAgo(meta.dataFetchedAt, now, t) })}
+                  </span>
+                </Tooltip>
               )}
             </span>
           )}
           <button
             type="button"
             onClick={() => setLang(lang === 'en' ? 'th' : 'en')}
-            className="bg-panel border border-line text-text font-display font-bold text-xs tracking-[0.04em] px-3.5 py-1.5 rounded-full cursor-pointer transition-colors hover:border-accent hover:text-accent"
+            className="bg-panel border border-line text-text font-display font-bold text-xs tracking-[0.04em] px-3.5 py-1.5 rounded-full cursor-pointer transition shadow-sm hover:shadow-md hover:border-accent hover:text-accent active:scale-[0.97]"
           >
             {t('lang.toggle')}
           </button>
@@ -207,7 +210,7 @@ export default function App() {
 
       {TAB_VIEWS[tab] ?? (
         <>
-      <div className="filters flex flex-wrap items-center gap-4 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 max-sm:flex-col max-sm:items-stretch">
+      <div className="filters flex flex-wrap items-center gap-4 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 shadow-sm max-sm:flex-col max-sm:items-stretch">
         <label className="flex flex-col gap-1 text-xs text-muted">
           {t('filters.search')}
           <input
@@ -280,7 +283,7 @@ export default function App() {
         <span className="ml-auto text-muted text-xs max-sm:text-right">{t('filters.shown', { count: filtered.length })}</span>
       </div>
 
-      <div className="overflow-auto border border-line rounded-md max-h-[72vh]">
+      <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
         <table className="players">
           <thead>
             <tr>
@@ -301,7 +304,11 @@ export default function App() {
               <tr key={p.id}>
                 <td className="name">
                   {p.name}
-                  {p.news && <span className="news" title={p.news}> ⚑</span>}
+                  {p.news && (
+                    <Tooltip content={p.news}>
+                      <span className="news"> ⚑</span>
+                    </Tooltip>
+                  )}
                 </td>
                 <td data-label={t('table.team')}>{p.teamShort}</td>
                 <td data-label={t('table.pos')}>

@@ -90,7 +90,7 @@ export default function ChipsView() {
       {loading && !plan && <LoadingState label={t('chips.loading')} />}
 
       {!error && plan && (
-        <section className="bg-panel border border-line rounded-md p-4">
+        <section className="bg-panel border border-line rounded-md p-4 shadow-sm">
           <h2 className="m-0 mb-2 font-display text-xl font-bold tracking-[0.01em]">{t('chips.title')}</h2>
           <div className="text-[13px] text-muted mb-3.5">{t('chips.note')}</div>
 

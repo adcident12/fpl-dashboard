@@ -5,6 +5,7 @@ import { TeamIdInput, TeamIdEmptyState, SAMPLE_TEAM_ID } from './TeamIdControls.
 import PitchView from './PitchView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import LoadingState, { Spinner } from './LoadingSpinner.jsx';
+import Tooltip from './Tooltip.jsx';
 import { useLang } from './i18n.jsx';
 
 function pct(w) {
@@ -23,14 +24,16 @@ function ComponentChip({ label, comp, t }) {
   const noteSuffix = noteText ? ` (${noteText})` : '';
   const title = `${label}: ${comp.raw} → ${comp.normalized} × ${comp.weight} = ${comp.points}${noteSuffix}`;
   return (
-    <span className="chip" title={title}>
-      <span className="chip-label">{label} {pct(comp.weight)}</span>
-      <span className="chip-vals">
-        {comp.raw} → {comp.normalized}
-        {noteText && <span className="chip-note"> ({noteText})</span>}
+    <Tooltip content={title}>
+      <span className="chip">
+        <span className="chip-label">{label} {pct(comp.weight)}</span>
+        <span className="chip-vals">
+          {comp.raw} → {comp.normalized}
+          {noteText && <span className="chip-note"> ({noteText})</span>}
+        </span>
+        <span className="chip-pts">= {comp.points}</span>
       </span>
-      <span className="chip-pts">= {comp.points}</span>
-    </span>
+    </Tooltip>
   );
 }
 
@@ -41,16 +44,16 @@ function ComponentChip({ label, comp, t }) {
 function EventFlagBadge({ blankEvent, dgwEvent, t }) {
   if (blankEvent) {
     return (
-      <span className="badge event-flag blank" title={t('sug.blankEventTitle')}>
-        {t('sug.blankEventBadge')}
-      </span>
+      <Tooltip content={t('sug.blankEventTitle')}>
+        <span className="badge event-flag blank">{t('sug.blankEventBadge')}</span>
+      </Tooltip>
     );
   }
   if (dgwEvent) {
     return (
-      <span className="badge event-flag dgw" title={t('sug.dgwEventTitle')}>
-        {t('sug.dgwEventBadge')}
-      </span>
+      <Tooltip content={t('sug.dgwEventTitle')}>
+        <span className="badge event-flag dgw">{t('sug.dgwEventBadge')}</span>
+      </Tooltip>
     );
   }
   return null;
@@ -64,9 +67,9 @@ function AvailabilityBadge({ availabilityPct, t }) {
   if (availabilityPct == null || availabilityPct >= 100) return null;
   const severity = availabilityPct <= 50 ? 'severe' : 'minor';
   return (
-    <span className={`badge event-flag availability-${severity}`} title={t('sug.availabilityTitle', { pct: availabilityPct })}>
-      {t('sug.availabilityBadge', { pct: availabilityPct })}
-    </span>
+    <Tooltip content={t('sug.availabilityTitle', { pct: availabilityPct })}>
+      <span className={`badge event-flag availability-${severity}`}>{t('sug.availabilityBadge', { pct: availabilityPct })}</span>
+    </Tooltip>
   );
 }
 
@@ -75,9 +78,9 @@ function AvailabilityBadge({ availabilityPct, t }) {
 function PenaltyBadge({ penaltyOrder, t }) {
   if (penaltyOrder !== 1) return null;
   return (
-    <span className="badge event-flag penalty" title={t('sug.penaltyTakerTitle')}>
-      {t('sug.penaltyTakerBadge')}
-    </span>
+    <Tooltip content={t('sug.penaltyTakerTitle')}>
+      <span className="badge event-flag penalty">{t('sug.penaltyTakerBadge')}</span>
+    </Tooltip>
   );
 }
 
@@ -99,11 +102,13 @@ function PlayerFlags({ p, t }) {
 function AvailabilityChip({ availability, preScore, score, t }) {
   if (availability.multiplier >= 1) return null;
   return (
-    <span className="chip chip-availability" title={t('sug.availabilityChipTitle', { pct: availability.pct })}>
-      <span className="chip-label">{t('weights.availability')}</span>
-      <span className="chip-vals">{preScore} → {score}</span>
-      <span className="chip-pts">× {availability.multiplier}</span>
-    </span>
+    <Tooltip content={t('sug.availabilityChipTitle', { pct: availability.pct })}>
+      <span className="chip chip-availability">
+        <span className="chip-label">{t('weights.availability')}</span>
+        <span className="chip-vals">{preScore} → {score}</span>
+        <span className="chip-pts">× {availability.multiplier}</span>
+      </span>
+    </Tooltip>
   );
 }
 
@@ -114,7 +119,11 @@ function CandidateRow({ c, rank, highlight, t }) {
       <tr className={highlight ? 'top-pick' : ''}>
         <td className="num rank" data-label={t('sug.rankLabel')}>{rank}</td>
         <td className="name">
-          {highlight && <span className="badge cap" title={t('sug.recommended')}>★</span>}
+          {highlight && (
+            <Tooltip content={t('sug.recommended')}>
+              <span className="badge cap">★</span>
+            </Tooltip>
+          )}
           {c.name}
           <PlayerFlags p={c} t={t} />
         </td>
@@ -182,16 +191,20 @@ function ScanRow({ row, t }) {
       <td data-label={t('table.pos')}>
         <span className={`pos pos-${posId(current.position)}`}>{current.position}</span>
       </td>
-      <td className="name" title={breakdownTitle(current, t)} data-label={t('sug.scanCurrent')}>
-        {current.name} <span className="muted">£{current.price.toFixed(2)}m</span>
+      <td className="name" data-label={t('sug.scanCurrent')}>
+        <Tooltip content={breakdownTitle(current, t)}>
+          <span>{current.name} <span className="muted">£{current.price.toFixed(2)}m</span></span>
+        </Tooltip>
         <PlayerFlags p={current} t={t} />
       </td>
       <td className="num" data-label={t('sug.currentScore')}>{current.score.toFixed(1)}</td>
       <td className="arrow-cell">→</td>
       {suggestion ? (
         <>
-          <td className="name" title={breakdownTitle(suggestion, t)} data-label={t('sug.scanSuggested')}>
-            {suggestion.name} <span className="muted">({suggestion.teamShort}, £{suggestion.price.toFixed(2)}m)</span>
+          <td className="name" data-label={t('sug.scanSuggested')}>
+            <Tooltip content={breakdownTitle(suggestion, t)}>
+              <span>{suggestion.name} <span className="muted">({suggestion.teamShort}, £{suggestion.price.toFixed(2)}m)</span></span>
+            </Tooltip>
             <PlayerFlags p={suggestion} t={t} />
           </td>
           <td className="num" data-label={t('sug.suggestedScore')}>{suggestion.score.toFixed(1)}</td>
@@ -333,7 +346,7 @@ export default function SuggestionsView() {
       {!squadError && squad && (
         <>
           {/* ---- Quick squad scan ---- */}
-          <section className="bg-panel border border-line rounded-md p-4">
+          <section className="bg-panel border border-line rounded-md p-4 shadow-sm">
             <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
               <h2 className="m-0 font-display text-xl font-bold tracking-[0.01em]">{t('sug.quickScan')}</h2>
               {scan && <WeightsEcho weights={{ ...scan.weights, ...weightsLabels }} label={t('weights.label')} />}
@@ -343,17 +356,17 @@ export default function SuggestionsView() {
 
             {scan && (
               <>
-                <div className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px] mb-2.5">
+                <div className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px] mb-2.5 shadow-sm">
                   <button
                     type="button"
-                    className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${pitchMode === 'current' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+                    className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-md cursor-pointer transition ${pitchMode === 'current' ? 'bg-accent text-white shadow-sm' : 'bg-transparent text-muted hover:text-text hover:bg-panel-2'}`}
                     onClick={() => setPitchMode('current')}
                   >
                     {t('sug.pitchCurrent')}
                   </button>
                   <button
                     type="button"
-                    className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${pitchMode === 'suggested' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+                    className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-md cursor-pointer transition ${pitchMode === 'suggested' ? 'bg-accent text-white shadow-sm' : 'bg-transparent text-muted hover:text-text hover:bg-panel-2'}`}
                     onClick={() => setPitchMode('suggested')}
                   >
                     {t('sug.pitchSuggested')}
@@ -370,7 +383,7 @@ export default function SuggestionsView() {
             {scanError && <div className="py-10 text-center text-[#ff8a80]">{scanError}</div>}
 
             {scan && (
-              <div className="overflow-auto border border-line rounded-md max-h-[72vh]">
+              <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
                 <table className="players sug scan">
                   <thead>
                     <tr>
@@ -395,7 +408,7 @@ export default function SuggestionsView() {
           </section>
 
           {/* ---- Transfers ---- */}
-          <section className="bg-panel border border-line rounded-md p-4">
+          <section className="bg-panel border border-line rounded-md p-4 shadow-sm">
             <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
               <h2 className="m-0 font-display text-xl font-bold tracking-[0.01em]">{t('sug.transferTitle')}</h2>
               {transfers && <WeightsEcho weights={{ ...transfers.weights, ...weightsLabels }} label={t('weights.label')} />}
@@ -421,7 +434,7 @@ export default function SuggestionsView() {
                 type="button"
                 onClick={loadTransfers}
                 disabled={!replaceId || transferLoading}
-                className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
+                className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-full px-4 py-2 font-semibold cursor-pointer transition shadow-sm enabled:hover:brightness-110 enabled:hover:shadow-md enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default disabled:shadow-none max-sm:self-stretch max-sm:text-center"
               >
                 {transferLoading && <Spinner size="sm" className="border-white/30 border-t-white" />}
                 {transferLoading ? t('sug.scoring') : t('sug.findReplacements')}
@@ -439,7 +452,7 @@ export default function SuggestionsView() {
                     bank: transfers.bank.toFixed(2),
                   })}
                 </div>
-                <div className="overflow-auto border border-line rounded-md max-h-[72vh]">
+                <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
                   <table className="players sug">
                     <thead>
                       <tr>
@@ -471,7 +484,7 @@ export default function SuggestionsView() {
           </section>
 
           {/* ---- Captain ---- */}
-          <section className="bg-panel border border-line rounded-md p-4">
+          <section className="bg-panel border border-line rounded-md p-4 shadow-sm">
             <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
               <h2 className="m-0 font-display text-xl font-bold tracking-[0.01em]">{t('sug.captainTitle')}</h2>
               {captain && <WeightsEcho weights={{ ...captain.weights, ...weightsLabels }} label={t('weights.label')} />}
@@ -483,7 +496,7 @@ export default function SuggestionsView() {
             {captain && (
               <>
                 <div className="text-[13px] text-muted mb-2.5">{t('sug.captainNote')}</div>
-                <div className="overflow-auto border border-line rounded-md max-h-[72vh]">
+                <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
                   <table className="players sug">
                     <thead>
                       <tr>

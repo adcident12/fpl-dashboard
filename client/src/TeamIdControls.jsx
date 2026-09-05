@@ -14,7 +14,7 @@ export function TeamIdInput({ value, onChangeValue, onLoad, loading }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 max-sm:flex-col max-sm:items-stretch">
+    <div className="flex flex-wrap items-center gap-3 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 shadow-sm max-sm:flex-col max-sm:items-stretch">
       <label className="flex flex-col gap-1 text-xs text-muted">
         {t('teamId.label')}
         <input
@@ -31,7 +31,7 @@ export function TeamIdInput({ value, onChangeValue, onLoad, loading }) {
         type="button"
         onClick={() => submit(value)}
         disabled={loading || !value.trim()}
-        className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-sm px-4 py-2 font-semibold cursor-pointer transition enabled:hover:brightness-110 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
+        className="self-end flex items-center justify-center gap-2 bg-accent text-white rounded-full px-4 py-2 font-semibold cursor-pointer transition shadow-sm enabled:hover:brightness-110 enabled:hover:shadow-md enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default disabled:shadow-none max-sm:self-stretch max-sm:text-center"
       >
         {loading && <Spinner size="sm" className="border-white/30 border-t-white" />}
         {loading ? t('teamId.loading') : t('teamId.load')}
@@ -41,7 +41,7 @@ export function TeamIdInput({ value, onChangeValue, onLoad, loading }) {
         onClick={() => submit(SAMPLE_TEAM_ID)}
         disabled={loading}
         title={t('teamId.trySampleTitle')}
-        className="self-end bg-transparent text-accent border border-accent rounded-sm px-3.5 py-2 font-semibold cursor-pointer transition enabled:hover:bg-accent/10 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
+        className="self-end bg-transparent text-accent border border-accent rounded-full px-3.5 py-2 font-semibold cursor-pointer transition enabled:hover:bg-accent/10 enabled:active:scale-[0.98] disabled:opacity-60 disabled:cursor-default max-sm:self-stretch max-sm:text-center"
       >
         {t('teamId.trySample')}
       </button>
@@ -52,7 +52,7 @@ export function TeamIdInput({ value, onChangeValue, onLoad, loading }) {
 export function TeamIdEmptyState({ onTrySample }) {
   const { t } = useLang();
   return (
-    <div className="text-left max-w-[480px] mx-auto my-6 bg-panel border border-line rounded-md py-5 px-6 text-muted">
+    <div className="text-left max-w-[480px] mx-auto my-6 bg-panel border border-line rounded-lg py-5 px-6 text-muted shadow-sm">
       <p className="mb-2.5">{t('teamId.empty.intro')}</p>
       <ol className="mb-3.5 pl-5">
         <li className="mb-1.5">
@@ -76,7 +76,7 @@ export function TeamIdEmptyState({ onTrySample }) {
         <button
           type="button"
           onClick={onTrySample}
-          className="bg-transparent text-accent border border-accent rounded-sm px-2.5 py-1 text-xs font-semibold cursor-pointer align-middle transition hover:bg-accent/10 active:scale-[0.98]"
+          className="bg-transparent text-accent border border-accent rounded-full px-2.5 py-1 text-xs font-semibold cursor-pointer align-middle transition hover:bg-accent/10 active:scale-[0.98]"
         >
           {t('teamId.trySample')}
         </button>

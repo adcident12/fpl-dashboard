@@ -3,6 +3,14 @@ import { fetchFixtureGrid } from './api.js';
 import LoadingState from './LoadingSpinner.jsx';
 import { useLang } from './i18n.jsx';
 
+// This file keeps native title= tooltips (not the Tooltip.jsx component used
+// elsewhere) — same reasoning as the rest of the file's Tailwind exemption
+// (see CLAUDE.md): the grid can have ~100 cells, and Tooltip's wrapper span
+// would sit around a block-level flex .cell div rather than an inline badge
+// like everywhere else it's used, which is untested territory Claude can't
+// visually verify in this environment. Lower reward (this grid is scanned
+// visually via color, not read cell-by-cell) for a real structural risk.
+
 // FDR is a 1-5 scale (1=easiest, 5=hardest). One color per level so the
 // grid is scannable at a glance.
 const FDR_BG = { 1: '#1b5e20', 2: '#558b2f', 3: '#f9a825', 4: '#ef6c00', 5: '#b71c1c' };

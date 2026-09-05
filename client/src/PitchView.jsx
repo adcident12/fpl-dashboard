@@ -1,5 +1,16 @@
 import { useLang } from './i18n.jsx';
 
+// Badges here keep native title= tooltips (not the Tooltip.jsx component used
+// elsewhere) — .jersey-badge/.priority-badge rely on position:absolute
+// resolving against .jersey-chip's position:relative (see the clip-path
+// note below), and Tooltip.jsx's wrapper span would insert an extra
+// non-positioned element into that chain. It's very likely harmless (a
+// non-positioned ancestor is skipped when resolving an absolute-positioned
+// descendant's containing block), but this exact area has already had two
+// real layout bugs from clip-path/absolute-positioning interactions, and
+// Claude can't visually verify the result in this environment — not worth
+// the risk for a tooltip fix on badges most users glance at without hovering.
+
 // Deterministic team color so every team gets a stable, distinct jersey color
 // without maintaining a 20-team lookup table (no team-crest/kit assets in this app).
 function teamColor(teamShort) {

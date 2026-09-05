@@ -1,4 +1,5 @@
 import { useLang } from './i18n.jsx';
+import Tooltip from './Tooltip.jsx';
 
 // FPL fixture difficulty is a 1-5 scale (1=easiest, 5=hardest).
 // Bucket into 3 for display: 1-2 easy, 3 medium, 4-5 hard.
@@ -31,9 +32,9 @@ export default function FdrBadges({ fixtures }) {
           // share the same event id (captain suggestions now pass the target
           // gameweek's actual fixtures, which can be 2 for a DGW) — pair it
           // with opponentId, which always differs between the two legs.
-          <span key={`${f.event}-${f.opponentId}`} className={`fdr-badge fdr-${bucket}`} title={title}>
-            {f.opponentShort}
-          </span>
+          <Tooltip key={`${f.event}-${f.opponentId}`} content={title}>
+            <span className={`fdr-badge fdr-${bucket}`}>{f.opponentShort}</span>
+          </Tooltip>
         );
       })}
     </span>

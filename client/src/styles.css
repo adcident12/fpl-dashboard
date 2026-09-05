@@ -12,6 +12,10 @@
   --color-bg: #0f1420;
   --color-panel: #161d2e;
   --color-panel-2: #1c2438;
+  /* Third surface tone — Material 3's "surface-container-highest" role, used
+     where a panel sits on top of another panel (e.g. a card inside a card)
+     and needs one more step of tonal separation than --color-panel-2 gives. */
+  --color-panel-3: #232c44;
   --color-text: #e8ecf4;
   --color-muted: #8b96ad;
   --color-line: #26304a;
@@ -20,17 +24,24 @@
   --color-easy: #2e7d32;
   --color-med: #f9a825;
   --color-hard: #c62828;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  /* Material 3 shape scale (small/medium/large/extra-large/full), applied via
+     Tailwind's rounded-sm/md/lg/xl/full utilities and the hand-written
+     classes below — bumped up from the previous flatter scale for a more
+     Material card/chip feel. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --font-display: 'Rajdhani', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   --font-body: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
 /* Kept as a plain custom property too — used in transition: var(--transition)
-   all over the hand-written classes below; Tailwind has no such utility. */
+   all over the hand-written classes below; Tailwind has no such utility.
+   Material 3's "emphasized" easing curve — decelerates into place rather
+   than linear/ease, which is most of what reads as "polished" motion. */
 :root {
-  --transition: 150ms ease;
+  --transition: 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -119,8 +130,9 @@ body {
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   max-height: 72vh;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
 }
 
 table.players {
@@ -173,8 +185,8 @@ table.players {
   display: inline-block;
   min-width: 34px;
   text-align: center;
-  padding: 1px 6px;
-  border-radius: 5px;
+  padding: 2px 8px;
+  border-radius: 9999px;
   font-size: 11px;
   font-weight: 700;
 }
@@ -186,8 +198,8 @@ table.players {
 /* .fdr-row removed — FdrBadges.jsx uses Tailwind utilities directly for it now. */
 .fdr-badge {
   display: inline-block;
-  padding: 1px 6px;
-  border-radius: 5px;
+  padding: 2px 8px;
+  border-radius: 9999px;
   font-size: 11px;
   font-weight: 700;
   color: #fff;
@@ -208,7 +220,7 @@ a:focus-visible {
 .fixture-grid {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 3px;
+  border-spacing: 4px;
 }
 .fixture-grid th,
 .fixture-grid td {
@@ -244,7 +256,7 @@ a:focus-visible {
   min-width: 84px;
 }
 .cell {
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 8px 4px;
   display: flex;
   flex-direction: column;
@@ -252,10 +264,12 @@ a:focus-visible {
   gap: 2px;
   min-height: 46px;
   justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .cell.empty {
   background: var(--color-panel-2);
   color: var(--color-muted);
+  box-shadow: none;
 }
 .cell-opp {
   font-size: 12px;
@@ -284,7 +298,7 @@ a:focus-visible {
 }
 .cell-dgw .cell {
   min-height: 34px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 .dgw-tag {
   position: absolute;
@@ -308,11 +322,12 @@ a:focus-visible {
   margin-bottom: 14px;
 }
 .banner-row {
-  border-radius: 6px;
-  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
   font-size: 13px;
   font-weight: 600;
   border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
 }
 .banner-double {
   background: rgba(79, 140, 255, 0.12);
@@ -354,10 +369,10 @@ tr.bench td {
   display: inline-block;
   min-width: 18px;
   text-align: center;
-  border-radius: 4px;
+  border-radius: 9999px;
   font-size: 10px;
   font-weight: 800;
-  padding: 1px 4px;
+  padding: 2px 6px;
   margin-right: 5px;
   vertical-align: middle;
 }
@@ -433,11 +448,17 @@ tr.breakdown-row td {
   align-items: baseline;
   gap: 6px;
   margin: 4px 14px 0 0;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border: 1px solid var(--color-line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
-  background: var(--color-panel);
+  /* One tone lighter than .breakdown-row's own panel-2 background (below),
+     so a chip visually sits "above" its row instead of blending into it. */
+  background: var(--color-panel-3);
+  transition: border-color var(--transition), background var(--transition);
+}
+.chip:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
 }
 .chip-label {
   color: var(--color-muted);
@@ -468,12 +489,13 @@ tr.breakdown-row td {
 .pitch {
   background: linear-gradient(180deg, #1b5e20, #2e7d32 50%, #1b5e20);
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 20px 12px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   overflow-x: auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
 }
 .pitch-row {
   display: flex;
@@ -496,6 +518,12 @@ tr.breakdown-row td {
   align-items: center;
   justify-content: center;
   margin-bottom: 4px;
+  /* box-shadow follows the element's rectangular box, not its clip-path —
+     it would draw a rectangle around the jersey's invisible bounding box
+     instead of hugging the silhouette. filter: drop-shadow() operates on
+     the actual rendered (clipped) pixels, so it's the only shadow that's
+     safe to use here. */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 }
 .jersey-team {
   color: #fff;
@@ -528,6 +556,7 @@ tr.breakdown-row td {
   align-items: center;
   justify-content: center;
   border: 1px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   z-index: 1;
 }
 .jersey-name {
@@ -560,8 +589,9 @@ tr.breakdown-row td {
   margin-top: 14px;
   background: var(--color-panel);
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .bench-label {
   font-family: var(--font-display);
@@ -620,10 +650,11 @@ table.scan .arrow-cell {
   gap: 8px;
 }
 .chip-card {
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: var(--radius-sm);
+  padding: 12px;
   border: 1px solid var(--color-line);
   background: var(--color-panel-2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .chip-card-name {
   font-weight: 700;
@@ -644,12 +675,14 @@ table.scan .arrow-cell {
 }
 .chip-status-available {
   border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-panel-2));
 }
 .chip-status-available .chip-card-status {
   color: var(--color-accent);
 }
 .chip-status-expiringSoon {
   border-color: var(--color-hard);
+  background: color-mix(in srgb, var(--color-hard) 14%, var(--color-panel-2));
 }
 .chip-status-expiringSoon .chip-card-status {
   color: var(--color-hard);
@@ -665,10 +698,11 @@ table.scan .arrow-cell {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  border-radius: 6px;
-  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
   background: rgba(79, 140, 255, 0.1);
   border: 1px solid rgba(79, 140, 255, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 .chip-rec-label {
   font-family: var(--font-display);
@@ -680,6 +714,37 @@ table.scan .arrow-cell {
 .chip-rec-text {
   font-size: 13px;
   color: var(--color-text);
+}
+
+/* ---- Tooltip (Tooltip.jsx) ----
+   A Material 3 "plain tooltip": small, no arrow (per spec — arrows are only
+   on "rich" tooltips), rendered via a portal into document.body so it's
+   never clipped by an ancestor's overflow:auto (several triggers live
+   inside .table-wrap's scroll container). Positioned with inline
+   left/top px from @floating-ui/dom, set directly on the element in
+   Tooltip.jsx — only the visual chrome lives here. */
+.tooltip-trigger {
+  cursor: help;
+}
+/* Opt-in hint style for a plain-text trigger (e.g. the header's "Updated Xm
+   ago") — a badge/chip trigger already carries its own background/border as
+   the "this has more info" affordance, so it does NOT get this by default;
+   adding an underline under a small pill badge would clash with its shape. */
+.tooltip-trigger.hint-underline {
+  border-bottom: 1px dotted var(--color-muted);
+}
+.tooltip-bubble {
+  z-index: 100;
+  max-width: 260px;
+  background: var(--color-panel-3);
+  color: var(--color-text);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 /* ============================================================

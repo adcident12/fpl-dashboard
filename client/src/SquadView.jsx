@@ -5,16 +5,29 @@ import { TeamIdInput, TeamIdEmptyState, SAMPLE_TEAM_ID } from './TeamIdControls.
 import PitchView from './PitchView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import LoadingState from './LoadingSpinner.jsx';
+import Tooltip from './Tooltip.jsx';
 import { useLang } from './i18n.jsx';
 
 function PlayerRow({ p, t }) {
   return (
     <tr className={p.starting ? '' : 'bench'}>
       <td className="name">
-        {p.isCaptain && <span className="badge cap" title={t('squad.captain')}>C</span>}
-        {p.isViceCaptain && <span className="badge vice" title={t('squad.viceCaptain')}>VC</span>}
+        {p.isCaptain && (
+          <Tooltip content={t('squad.captain')}>
+            <span className="badge cap">C</span>
+          </Tooltip>
+        )}
+        {p.isViceCaptain && (
+          <Tooltip content={t('squad.viceCaptain')}>
+            <span className="badge vice">VC</span>
+          </Tooltip>
+        )}
         {p.name}
-        {p.status !== 'a' && <span className="news" title={p.news || p.status}> ⚑</span>}
+        {p.status !== 'a' && (
+          <Tooltip content={p.news || p.status}>
+            <span className="news"> ⚑</span>
+          </Tooltip>
+        )}
       </td>
       <td data-label={t('table.team')}>{p.teamShort}</td>
       <td data-label={t('table.pos')}>
@@ -71,7 +84,7 @@ export default function SquadView() {
     <div>
       <TeamIdInput value={teamId} onChangeValue={setTeamId} onLoad={load} loading={loading} />
       {data && (
-        <div className="flex flex-wrap items-center gap-3 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5">
+        <div className="flex flex-wrap items-center gap-3 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 shadow-sm">
           <span className="text-muted text-[13px]">
             {t('meta.eventPlayers', { event: data.eventName, count: data.squad.length })}
             {data.teamPoints != null && <> · <b className="text-text">{data.teamPoints}</b> {t('squad.ptsThisGw')}</>}
@@ -95,7 +108,7 @@ export default function SquadView() {
       {!error && data && <PitchView squad={data.squad} scan={scan?.rows} />}
 
       {!error && data && (
-        <div className="overflow-auto border border-line rounded-md max-h-[72vh]">
+        <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
           <table className="players squad">
             <thead>
               <tr>

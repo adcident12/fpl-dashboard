@@ -8,7 +8,7 @@ import { useLang } from './i18n.jsx';
 
 function Section({ title, children }) {
   return (
-    <section className="bg-panel border border-line rounded-md p-4">
+    <section className="bg-panel border border-line rounded-md p-4 shadow-sm">
       <h2 className="m-0 mb-3 font-display text-xl font-bold tracking-[0.01em]">{title}</h2>
       <div className="flex flex-col gap-3 text-[14px] leading-relaxed">{children}</div>
     </section>
