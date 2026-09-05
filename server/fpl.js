@@ -247,7 +247,7 @@ export async function buildFixtureGrid() {
  * holds `points` (this GW), `value` (hundreds of thousands), `rank`.
  */
 export async function buildSquad(teamId, eventId) {
-  const data = await buildData();
+  const [data, bootstrap] = await Promise.all([buildData(), getBootstrap()]);
   const ev = eventId ?? data.meta.currentEventId;
   const [picks, live] = await Promise.all([getEntryPicks(teamId, ev), getEventLive(ev)]);
 
@@ -296,7 +296,12 @@ export async function buildSquad(teamId, eventId) {
   return {
     teamId,
     eventId: ev,
-    eventName: data.meta.currentEventName,
+    // Was `data.meta.currentEventName` — always the live gameweek's name
+    // regardless of which `ev` was actually requested/used. Only matters
+    // when `eventId` is passed explicitly (no current UI does; the eventId
+    // param exists in api.js/every route for a future gameweek picker), but
+    // wrong is wrong: look up the name for the gameweek actually fetched.
+    eventName: bootstrap.events.find((e) => e.id === ev)?.name ?? `Gameweek ${ev}`,
     teamPoints: picks.entry_history?.points ?? null,
     value,
     rank: picks.entry_history?.rank ?? null,
