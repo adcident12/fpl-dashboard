@@ -18,7 +18,11 @@ if (typeof window !== 'undefined') {
 // triggers live inside table.wrap's scroll container, and an inline
 // absolutely-positioned tooltip would get cut off there exactly the way a
 // badge inside PitchView's clip-path jersey used to (see CLAUDE.md).
-export default function Tooltip({ content, children, className = '' }) {
+// `as`: the trigger wrapper's tag — 'span' (default) for inline triggers
+// (badges, chips, text), 'div' for a block-level trigger (e.g. FixtureGrid's
+// flex .cell) so the DOM stays block-in-block instead of block-in-inline.
+export default function Tooltip({ content, children, className = '', as = 'span' }) {
+  const Trigger = as;
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false); // true once first-positioned, avoids a (0,0) flash
   const triggerRef = useRef(null);
@@ -66,7 +70,7 @@ export default function Tooltip({ content, children, className = '' }) {
   if (!content) return children;
 
   return (
-    <span
+    <Trigger
       ref={triggerRef}
       className={`tooltip-trigger ${className}`}
       tabIndex={0}
@@ -95,6 +99,6 @@ export default function Tooltip({ content, children, className = '' }) {
           </span>,
           document.body
         )}
-    </span>
+    </Trigger>
   );
 }

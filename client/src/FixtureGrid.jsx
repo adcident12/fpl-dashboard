@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { fetchFixtureGrid } from './api.js';
 import LoadingState from './LoadingSpinner.jsx';
+import Tooltip from './Tooltip.jsx';
 import { useLang } from './i18n.jsx';
 
-// This file keeps native title= tooltips (not the Tooltip.jsx component used
-// elsewhere) — same reasoning as the rest of the file's Tailwind exemption
-// (see CLAUDE.md): the grid can have ~100 cells, and Tooltip's wrapper span
-// would sit around a block-level flex .cell div rather than an inline badge
-// like everywhere else it's used, which is untested territory Claude can't
-// visually verify in this environment. Lower reward (this grid is scanned
-// visually via color, not read cell-by-cell) for a real structural risk.
+// Cells use Tooltip's as="div" (not the default "span") — .cell is a
+// block-level flex container, and Tooltip's wrapper needs to be block-level
+// too so the DOM stays block-in-block instead of a <div> nested in a <span>.
+// This grid used to keep native title= tooltips here specifically (documented
+// as a deliberate exemption), but the browser's own tooltip styling/position
+// can't be touched via CSS at all — a real, reported inconsistency next to
+// the Material-styled Tooltip used everywhere else in the app — so it's
+// switched over too now.
 
 // FDR is a 1-5 scale (1=easiest, 5=hardest). One color per level so the
 // grid is scannable at a glance.
@@ -24,29 +26,30 @@ function FixtureRow({ f, t }) {
   const side = f.home ? t('fixtures.home') : t('fixtures.away');
   const title = `vs ${f.opponentName} (${side}) — FDR ${f.difficulty}/5`;
   return (
-    <div
-      className={`cell fdr-${f.difficulty}${f.done ? ' done' : ''}`}
-      style={{ background: bg, color: dark ? '#fff' : '#111' }}
-      title={title}
-    >
-      <span className="cell-opp">
-        {f.home ? 'v' : '@'} {f.opponentShort}
-      </span>
-      {f.done && (
-        <span className="cell-score">
-          {f.scoreFor}–{f.scoreAgainst}
+    <Tooltip as="div" content={title}>
+      <div
+        className={`cell fdr-${f.difficulty}${f.done ? ' done' : ''}`}
+        style={{ background: bg, color: dark ? '#fff' : '#111' }}
+      >
+        <span className="cell-opp">
+          {f.home ? 'v' : '@'} {f.opponentShort}
         </span>
-      )}
-    </div>
+        {f.done && (
+          <span className="cell-score">
+            {f.scoreFor}–{f.scoreAgainst}
+          </span>
+        )}
+      </div>
+    </Tooltip>
   );
 }
 
 function Cell({ fixtures, t }) {
   if (fixtures.length === 0) {
     return (
-      <div className="cell empty blank-cell" title={t('fixtures.blank')}>
-        {t('fixtures.blank')}
-      </div>
+      <Tooltip as="div" content={t('fixtures.blank')}>
+        <div className="cell empty blank-cell">{t('fixtures.blank')}</div>
+      </Tooltip>
     );
   }
   if (fixtures.length === 1) {
