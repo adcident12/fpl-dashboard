@@ -4,6 +4,7 @@ import FixtureGrid from './FixtureGrid.jsx';
 import SquadView from './SquadView.jsx';
 import SuggestionsView from './SuggestionsView.jsx';
 import FdrBadges from './FdrBadges.jsx';
+import Logo from './Logo.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -110,7 +111,8 @@ export default function App() {
   return (
     <div className="max-w-[1200px] mx-auto p-4 max-[900px]:p-3">
       <header className="flex items-center flex-wrap gap-5 mb-3 max-sm:gap-2.5">
-        <h1 className="font-display text-2xl font-bold tracking-[0.03em] uppercase m-0 before:content-[''] before:inline-block before:w-2 before:h-2 before:rounded-full before:bg-accent-2 before:mr-2 before:align-middle">
+        <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-[0.03em] uppercase m-0">
+          <Logo className="w-6 h-6" />
           {t('app.title')}
         </h1>
         <nav className="inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px]">
