@@ -12,6 +12,7 @@ const STRINGS = {
     'nav.squad': 'My Squad',
     'nav.suggestions': 'Suggestions',
     'nav.chips': 'Chips',
+    'nav.guide': 'Guide',
     'meta.eventPlayers': '{{event}} · {{count}} players',
     'meta.updated': 'Updated {{time}}',
     'time.justNow': 'just now',
@@ -109,7 +110,7 @@ const STRINGS = {
     'pitch.priorityTitle': 'Transfer priority #{{rank}} — biggest upgrade available',
 
     'sug.quickScan': 'Quick squad scan',
-    'sug.quickScanNote': 'Every starting XI player compared to the best same-position replacement you can afford (assumes one swap at a time, not all at once) — hover a name to see the score breakdown. The number on a jersey is transfer priority (biggest score gap first).',
+    'sug.quickScanNote': 'Every starting XI player compared to the best same-position replacement you can afford (assumes one swap at a time, not all at once) — hover a name to see the score breakdown (form, fixtures, value, underlying stats, availability). The number on a jersey is transfer priority (biggest score gap first). See the Guide tab for what every badge and number means.',
     'sug.pitchCurrent': 'Current team',
     'sug.pitchSuggested': 'Suggested team',
     'sug.pitchSuggestedNote': 'Dashed outline = a player the system suggests bringing in (assumes every "Upgrade" swap happens at once). Your real budget/free transfers may not stretch to all of them — see the table below for details.',
@@ -135,7 +136,7 @@ const STRINGS = {
 
     'sug.captainTitle': 'Captain pick',
     'sug.captainScoring': 'Scoring starting XI…',
-    'sug.captainNote': 'Starting XI only · single next-fixture difficulty · top pick highlighted.',
+    'sug.captainNote': 'Starting XI only · scored on that gameweek\'s actual fixture(s) — 0 if blank, both legs if a double · top pick highlighted. See the Guide tab for the full formula.',
     'sug.recommended': 'Recommended',
     'sug.blankEventBadge': 'BLANK',
     'sug.blankEventTitle': 'No fixture this gameweek — guaranteed 0 points. Fixture score forced to 0.',
@@ -185,6 +186,7 @@ const STRINGS = {
     'nav.squad': 'ทีมของฉัน',
     'nav.suggestions': 'คำแนะนำ',
     'nav.chips': 'Chip',
+    'nav.guide': 'คู่มือ',
     'meta.eventPlayers': '{{event}} · นักเตะ {{count}} คน',
     'meta.updated': 'อัปเดตล่าสุด {{time}}',
     'time.justNow': 'เมื่อสักครู่',
@@ -282,7 +284,7 @@ const STRINGS = {
     'pitch.priorityTitle': 'ลำดับความสำคัญเปลี่ยนตัว #{{rank}} — ส่วนต่างคะแนนเยอะที่สุด',
 
     'sug.quickScan': 'สแกนทีมด่วน',
-    'sug.quickScanNote': 'เทียบตัวจริงทั้ง 11 คนกับตัวเลือกที่ดีที่สุดในตำแหน่งเดียวกันที่งบไหว (คำนวณแบบเปลี่ยนทีละคน ไม่ใช่เปลี่ยนพร้อมกันทั้งหมด) — เอาเมาส์ชี้ชื่อเพื่อดู breakdown คะแนน ตัวเลขบนเสื้อ = ลำดับความสำคัญที่ควรเปลี่ยนก่อน (ส่วนต่างคะแนนเยอะสุดก่อน)',
+    'sug.quickScanNote': 'เทียบตัวจริงทั้ง 11 คนกับตัวเลือกที่ดีที่สุดในตำแหน่งเดียวกันที่งบไหว (คำนวณแบบเปลี่ยนทีละคน ไม่ใช่เปลี่ยนพร้อมกันทั้งหมด) — เอาเมาส์ชี้ชื่อเพื่อดู breakdown คะแนน (ฟอร์ม, โปรแกรมแข่ง, ความคุ้มค่า, สถิติเบื้องหลัง, โอกาสลงเล่น) ตัวเลขบนเสื้อ = ลำดับความสำคัญที่ควรเปลี่ยนก่อน (ส่วนต่างคะแนนเยอะสุดก่อน) ดูความหมายของ badge ทั้งหมดที่แท็บคู่มือ',
     'sug.pitchCurrent': 'ทีมปัจจุบัน',
     'sug.pitchSuggested': 'ทีมแนะนำ',
     'sug.pitchSuggestedNote': 'เสื้อขอบเส้นประ = ตัวที่ระบบแนะนำให้เปลี่ยนเข้ามาแทน (สมมติว่าเปลี่ยนทุกตำแหน่งที่เป็น Upgrade พร้อมกัน) — ของจริงงบ/free transfer อาจไม่พอให้เปลี่ยนพร้อมกันทั้งหมด ดูรายละเอียดที่ตารางด้านล่าง',
@@ -308,7 +310,7 @@ const STRINGS = {
 
     'sug.captainTitle': 'คำแนะนำกัปตัน',
     'sug.captainScoring': 'กำลังคำนวณตัวจริง…',
-    'sug.captainNote': 'พิจารณาเฉพาะตัวจริง · ใช้ความยากนัดถัดไปนัดเดียว · อันดับ 1 ไฮไลต์ไว้',
+    'sug.captainNote': 'พิจารณาเฉพาะตัวจริง · คิดจากนัดจริงของ gameweek นั้นๆ (0 ถ้าไม่มีนัด, นับทั้ง 2 นัดถ้าเป็น Double) · อันดับ 1 ไฮไลต์ไว้ ดูสูตรเต็มที่แท็บคู่มือ',
     'sug.recommended': 'แนะนำ',
     'sug.blankEventBadge': 'ไม่มีนัด',
     'sug.blankEventTitle': 'ไม่มีนัดแข่งในสัปดาห์นี้ — ได้ 0 แต้มแน่นอน คะแนนด้าน fixture ถูกบังคับให้เป็น 0',

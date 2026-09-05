@@ -4,6 +4,7 @@ import FixtureGrid from './FixtureGrid.jsx';
 import SquadView from './SquadView.jsx';
 import SuggestionsView from './SuggestionsView.jsx';
 import ChipsView from './ChipsView.jsx';
+import GuideView from './GuideView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
@@ -43,6 +44,7 @@ const TAB_VIEWS = {
   squad: <SquadView />,
   suggestions: <SuggestionsView />,
   chips: <ChipsView />,
+  guide: <GuideView />,
 };
 
 const TABS = [
@@ -51,6 +53,7 @@ const TABS = [
   { key: 'squad', labelKey: 'nav.squad' },
   { key: 'suggestions', labelKey: 'nav.suggestions' },
   { key: 'chips', labelKey: 'nav.chips' },
+  { key: 'guide', labelKey: 'nav.guide' },
 ];
 
 // Deadline countdown badge color: red under 3h left, amber under 24h, muted otherwise.
