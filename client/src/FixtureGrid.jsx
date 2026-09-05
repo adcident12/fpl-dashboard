@@ -69,7 +69,7 @@ export default function FixtureGrid() {
               <tr key={team.id}>
                 <td className="team-col">{team.name}</td>
                 {team.fixtures.map((f, i) => (
-                  <td key={i} className="cell-td">
+                  <td key={data.gameweeks[i].id} className="cell-td">
                     <Cell f={f} t={t} />
                   </td>
                 ))}

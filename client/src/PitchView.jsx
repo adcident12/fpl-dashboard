@@ -96,15 +96,15 @@ export default function PitchView({ squad, scan, mode = 'current' }) {
   const starting = effectiveSquad.filter((p) => p.starting);
   const bench = [...effectiveSquad.filter((p) => !p.starting)].sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99));
   const rows = [1, 2, 3, 4]
-    .map((posId) => starting.filter((p) => p.positionId === posId))
-    .filter((row) => row.length > 0);
+    .map((posId) => ({ posId, players: starting.filter((p) => p.positionId === posId) }))
+    .filter((row) => row.players.length > 0);
 
   return (
     <div className="pitch-wrap">
       <div className="pitch">
-        {rows.map((row, i) => (
-          <div className="pitch-row" key={i}>
-            {row.map((p) => (
+        {rows.map((row) => (
+          <div className="pitch-row" key={row.posId}>
+            {row.players.map((p) => (
               <JerseyChip key={p.slot} player={p} priority={ranks.get(p.id)} t={t} />
             ))}
           </div>

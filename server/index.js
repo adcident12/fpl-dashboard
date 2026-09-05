@@ -19,6 +19,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.disable('x-powered-by'); // don't advertise the Express version
+
+// Open CORS is intentional: every endpoint only reads public FPL data (no
+// auth, no writes), and the client is deployed on a different origin
+// (GitHub Pages) than this API (Render) — see CLAUDE.md's split-deployment
+// section. Restricting the origin would just break that deployment for no
+// security benefit.
 app.use(cors());
 app.use(express.json());
 

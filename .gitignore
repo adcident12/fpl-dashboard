@@ -4,3 +4,4 @@ server/.cache/
 .tmp/
 *.log
 .DS_Store
+.scannerwork/

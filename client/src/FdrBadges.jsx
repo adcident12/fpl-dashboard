@@ -17,7 +17,7 @@ export default function FdrBadges({ fixtures }) {
   if (!fixtures || fixtures.length === 0) return <span className="muted">{t('fdr.none')}</span>;
   return (
     <span className="inline-flex gap-1">
-      {fixtures.map((f, i) => {
+      {fixtures.map((f) => {
         const bucket = fdrBucket(f.difficulty);
         const title = t('fdr.tooltip', {
           event: f.event,
@@ -27,7 +27,7 @@ export default function FdrBadges({ fixtures }) {
           label: t(FDR_LABEL_KEY[bucket]),
         });
         return (
-          <span key={i} className={`fdr-badge fdr-${bucket}`} title={title}>
+          <span key={f.event} className={`fdr-badge fdr-${bucket}`} title={title}>
             {f.opponentShort}
           </span>
         );
