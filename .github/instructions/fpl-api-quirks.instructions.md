@@ -63,6 +63,12 @@ Verified against a real response (2026-09-05) — this shape does **not** match 
 ## Gameweek live points (`event/{gw}/live/`)
 - `{ elements: [{ id, stats: { total_points, minutes, goals_scored, ... } }] }` — `id` matches `elements[].id` / pick `element`. This is the only source for a player's points in a specific past/current gameweek (bootstrap-static only has season totals).
 
+## Chip windows (`bootstrap-static.chips[]`) and chip usage (`entry/{id}/history/`)
+Verified against a real response (2026-09-05), 2026/27 season (8 chips, 2 sets of 4 — see the game guide):
+- `bootstrap-static.chips[]` is the **authoritative source for chip windows** — 8 entries, one per chip instance, each `{ id, name, start_event, stop_event, chip_type }`. `name` is one of `wildcard`, `freehit`, `bboost`, `3xc` (triple captain) — each name appears twice, once per half (e.g. wildcard #1: `start_event:2, stop_event:19`; wildcard #2: `start_event:20, stop_event:38`). **Do not hardcode "GW19" as the season-half boundary** — read `stop_event`/`start_event` from here so it stays correct if FPL changes the split.
+- `entry/{id}/history/` returns `{ current[], past[], chips[] }`. **`chips[]` is the user's actual chip-usage history** — `[{ name, event, time }]`, one entry per chip the user has already played. This means the app does **not** need the user to manually track which chips they've used (the roadmap doc originally assumed this would be necessary — it isn't): match a used chip to a window by `name` and `event` falling inside that window's `[start_event, stop_event]` range.
+- `current[]` is per-gameweek history: `{ event, points, total_points, rank, overall_rank, bank, value, event_transfers, event_transfers_cost, points_on_bench }` — `bank`/`value` here are the same hundreds-of-thousands units as `entry_history` elsewhere.
+
 ## Derived values to compute (not in the API)
 - **Price in £m** = `now_cost / 10`.
 - **Points per million** = `value_season` (already provided) — or `total_points / (now_cost/10)`.

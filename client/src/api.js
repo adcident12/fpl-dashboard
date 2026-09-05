@@ -60,3 +60,14 @@ export async function fetchSquadScan(teamId, eventId) {
   }
   return res.json();
 }
+
+export async function fetchChipPlan(teamId, eventId) {
+  const params = new URLSearchParams({ teamId: String(teamId) });
+  if (eventId) params.set('eventId', String(eventId));
+  const res = await fetch(`${API}/chips?${params}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to load chip plan (${res.status})`);
+  }
+  return res.json();
+}

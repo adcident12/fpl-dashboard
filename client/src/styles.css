@@ -559,6 +559,89 @@ table.scan .arrow-cell {
   color: var(--color-muted);
 }
 
+/* ---- Chip planning ---- */
+.chip-halves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.chip-half-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+.chip-half-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.chip-card {
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel-2);
+}
+.chip-card-name {
+  font-weight: 700;
+  font-size: 13px;
+}
+.chip-card-window {
+  font-size: 11px;
+  color: var(--color-muted);
+  margin-top: 2px;
+}
+.chip-card-status {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.chip-status-used .chip-card-status {
+  color: var(--color-muted);
+}
+.chip-status-available {
+  border-color: var(--color-accent);
+}
+.chip-status-available .chip-card-status {
+  color: var(--color-accent);
+}
+.chip-status-expiringSoon {
+  border-color: var(--color-hard);
+}
+.chip-status-expiringSoon .chip-card-status {
+  color: var(--color-hard);
+}
+.chip-status-upcoming .chip-card-status,
+.chip-status-expired .chip-card-status {
+  color: var(--color-muted);
+}
+.chip-status-expired {
+  opacity: 0.6;
+}
+.chip-rec-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: rgba(79, 140, 255, 0.1);
+  border: 1px solid rgba(79, 140, 255, 0.3);
+}
+.chip-rec-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+.chip-rec-text {
+  font-size: 13px;
+  color: var(--color-text);
+}
+
 /* ============================================================
    Responsive
    Two breakpoints: 900px tightens layout (tablet), 640px stacks
@@ -581,6 +664,9 @@ table.scan .arrow-cell {
   .jersey-name,
   .jersey-price {
     max-width: 60px;
+  }
+  .chip-halves {
+    grid-template-columns: 1fr;
   }
 }
 

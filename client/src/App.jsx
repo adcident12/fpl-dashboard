@@ -3,6 +3,7 @@ import { fetchPlayers } from './api.js';
 import FixtureGrid from './FixtureGrid.jsx';
 import SquadView from './SquadView.jsx';
 import SuggestionsView from './SuggestionsView.jsx';
+import ChipsView from './ChipsView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
@@ -141,6 +142,12 @@ export default function App() {
           >
             {t('nav.suggestions')}
           </button>
+          <button
+            className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-sm cursor-pointer transition-colors ${tab === 'chips' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+            onClick={() => setTab('chips')}
+          >
+            {t('nav.chips')}
+          </button>
         </nav>
         <div className="flex items-center gap-3 ml-auto max-sm:w-full max-sm:justify-between">
           {meta && (
@@ -171,6 +178,8 @@ export default function App() {
         <SquadView />
       ) : tab === 'suggestions' ? (
         <SuggestionsView />
+      ) : tab === 'chips' ? (
+        <ChipsView />
       ) : (
         <>
       <div className="filters flex flex-wrap items-center gap-4 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 max-sm:flex-col max-sm:items-stretch">

@@ -10,6 +10,7 @@ import {
   buildTransferSuggestions,
   buildCaptainSuggestions,
   buildSquadScan,
+  buildChipPlan,
   getFixtures,
   getElementSummary,
   getEntryPicks,
@@ -125,6 +126,21 @@ app.get('/api/squad-scan', async (req, res) => {
     if (!teamId) return res.status(400).json({ error: 'teamId query param is required' });
     const eventId = req.query.eventId ? Number(req.query.eventId) : null;
     res.json(await buildSquadScan(teamId, eventId));
+  } catch (e) {
+    const status = /404/.test(e.message) ? 404 : 502;
+    res.status(status).json({ error: e.message });
+  }
+});
+
+// Chip planning helper — chip windows (from bootstrap-static, not hardcoded)
+// cross-referenced with the user's actual chip usage (entry history), plus
+// heuristic recommendations. ?teamId= required.
+app.get('/api/chips', async (req, res) => {
+  try {
+    const teamId = Number(req.query.teamId);
+    if (!teamId) return res.status(400).json({ error: 'teamId query param is required' });
+    const eventId = req.query.eventId ? Number(req.query.eventId) : null;
+    res.json(await buildChipPlan(teamId, eventId));
   } catch (e) {
     const status = /404/.test(e.message) ? 404 : 502;
     res.status(status).json({ error: e.message });
