@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 const STORAGE_KEY = 'fpl-lang';
 
@@ -460,7 +460,7 @@ const LangContext = createContext(null);
 const STORAGE_KEY_LANG = STORAGE_KEY;
 
 export function LangProvider({ children }) {
-  const [lang, setLangState] = useState(() => {
+  const [value, setValue] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY_LANG) || 'en';
     } catch {
@@ -469,7 +469,7 @@ export function LangProvider({ children }) {
   });
 
   const setLang = useCallback((l) => {
-    setLangState(l);
+    setValue(l);
     try {
       localStorage.setItem(STORAGE_KEY_LANG, l);
     } catch {
@@ -477,9 +477,14 @@ export function LangProvider({ children }) {
     }
   }, []);
 
-  const t = useCallback((key, vars) => translate(lang, key, vars), [lang]);
+  const t = useCallback((key, vars) => translate(value, key, vars), [value]);
 
-  return <LangContext.Provider value={{ lang, setLang, t }}>{children}</LangContext.Provider>;
+  // Memoized so every consumer of useLang() doesn't re-render on every
+  // LangProvider render — only when lang (and so t, via its own useCallback
+  // dep) actually changes.
+  const contextValue = useMemo(() => ({ lang: value, setLang, t }), [value, setLang, t]);
+
+  return <LangContext.Provider value={contextValue}>{children}</LangContext.Provider>;
 }
 
 export function useLang() {

@@ -27,7 +27,7 @@ import Tooltip from './Tooltip.jsx';
 export function teamColor(teamShort) {
   let hash = 0;
   for (let i = 0; i < teamShort.length; i++) {
-    hash = (hash * 31 + teamShort.charCodeAt(i)) >>> 0;
+    hash = (hash * 31 + teamShort.codePointAt(i)) >>> 0;
   }
   return `hsl(${hash % 360}, 55%, 38%)`;
 }

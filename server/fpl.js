@@ -583,6 +583,14 @@ export async function buildTransferSuggestions(teamId, replaceId, eventId) {
   };
 }
 
+// No affordable alternative at all vs. one that actually scores higher than
+// the incumbent vs. one that doesn't — three distinct outcomes, so a plain
+// if-chain reads better here than a nested ternary.
+function scanVerdict(best, currentScore) {
+  if (!best) return 'no-option';
+  return best.score > currentScore ? 'upgrade' : 'keep';
+}
+
 /**
  * Quick squad scan — no need to pick a player first. Compares every starting
  * XI player against the best same-position, budget-affordable alternative
@@ -620,7 +628,7 @@ export async function buildSquadScan(teamId, eventId) {
         breakdown: currentScored.breakdown,
       },
       suggestion: best,
-      verdict: !best ? 'no-option' : best.score > currentScored.score ? 'upgrade' : 'keep',
+      verdict: scanVerdict(best, currentScored.score),
     };
   });
 

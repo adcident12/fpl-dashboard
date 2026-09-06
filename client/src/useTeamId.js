@@ -10,7 +10,7 @@ const STORAGE_KEY = 'fpl-team-id';
  * "your team" still prefills from the same saved ID every other tab uses.
  */
 export function useTeamId(key = STORAGE_KEY) {
-  const [teamId, setTeamIdState] = useState(() => {
+  const [value, setValue] = useState(() => {
     try {
       return localStorage.getItem(key) || '';
     } catch {
@@ -19,7 +19,7 @@ export function useTeamId(key = STORAGE_KEY) {
   });
 
   function setTeamId(id) {
-    setTeamIdState(id);
+    setValue(id);
     try {
       localStorage.setItem(key, id);
     } catch {
@@ -27,5 +27,5 @@ export function useTeamId(key = STORAGE_KEY) {
     }
   }
 
-  return [teamId, setTeamId];
+  return [value, setTeamId];
 }

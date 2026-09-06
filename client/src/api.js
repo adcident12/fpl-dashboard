@@ -76,7 +76,8 @@ export async function fetchBonusPredictor(eventId) {
   const params = new URLSearchParams();
   if (eventId) params.set('eventId', String(eventId));
   const qs = params.toString();
-  const res = await fetch(`${API}/bonus-predictor${qs ? `?${qs}` : ''}`);
+  const suffix = qs ? `?${qs}` : '';
+  const res = await fetch(`${API}/bonus-predictor${suffix}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Failed to load bonus predictor (${res.status})`);
@@ -88,7 +89,8 @@ export async function fetchDreamTeam(eventId) {
   const params = new URLSearchParams();
   if (eventId) params.set('eventId', String(eventId));
   const qs = params.toString();
-  const res = await fetch(`${API}/dream-team${qs ? `?${qs}` : ''}`);
+  const suffix = qs ? `?${qs}` : '';
+  const res = await fetch(`${API}/dream-team${suffix}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Failed to load dream team (${res.status})`);

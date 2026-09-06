@@ -21,6 +21,11 @@ function banterKey(margin) {
   return 'rivalry.close';
 }
 
+function computeWinnerLabel(dataA, dataB, t) {
+  if (dataA.teamPoints === dataB.teamPoints) return null;
+  return dataA.teamPoints > dataB.teamPoints ? t('rivalry.yourTeam') : t('rivalry.rivalTeam');
+}
+
 function Side({ label, teamId, setTeamId, data, error, loading, onLoad, t }) {
   return (
     <div className="flex-1 min-w-[280px]">
@@ -93,9 +98,7 @@ export default function RivalryView() {
 
   const bothLoaded = dataA?.teamPoints != null && dataB?.teamPoints != null;
   const margin = bothLoaded ? Math.abs(dataA.teamPoints - dataB.teamPoints) : null;
-  const winnerLabel = bothLoaded && dataA.teamPoints !== dataB.teamPoints
-    ? (dataA.teamPoints > dataB.teamPoints ? t('rivalry.yourTeam') : t('rivalry.rivalTeam'))
-    : null;
+  const winnerLabel = bothLoaded ? computeWinnerLabel(dataA, dataB, t) : null;
 
   return (
     <div>
