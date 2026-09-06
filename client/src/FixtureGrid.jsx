@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchFixtureGrid } from './api.js';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
+import FdrBadges from './FdrBadges.jsx';
 import { useLang } from './i18n.jsx';
 
 // Cells use Tooltip's as="div" (not the default "span") — .cell is a
@@ -98,6 +99,44 @@ function DgwBgwBanner({ data, t }) {
   );
 }
 
+// Fan feature — teams ranked by average fixture difficulty over the same
+// visible window as the grid above, easiest run first. Computed entirely
+// client-side from the grid's own data (no new server endpoint): flattens
+// each team's per-gameweek fixture arrays (0+ each, so a Blank Gameweek just
+// contributes nothing to the average rather than skewing it, and a Double
+// Gameweek's two legs both count individually).
+function computeFixtureSwing(data) {
+  return data.teams
+    .map((team) => {
+      const flat = team.fixtures.flat();
+      const avgFDR = flat.length ? flat.reduce((s, f) => s + f.difficulty, 0) / flat.length : null;
+      return { id: team.id, name: team.name, avgFDR, fixtures: flat };
+    })
+    .sort((a, b) => (a.avgFDR ?? 99) - (b.avgFDR ?? 99));
+}
+
+function FixtureSwing({ data, t }) {
+  const ranked = computeFixtureSwing(data);
+  return (
+    <div className="bg-panel border border-line rounded-md p-3.5 mb-3.5 shadow-sm">
+      <h3 className="m-0 mb-1 font-display text-base font-bold tracking-[0.01em]">{t('fixtures.swingTitle')}</h3>
+      <div className="text-[13px] text-muted mb-3">{t('fixtures.swingNote')}</div>
+      <div className="flex flex-col gap-1.5">
+        {ranked.map((team, i) => (
+          <div key={team.id} className="flex items-center gap-3 flex-wrap">
+            <span className="text-muted text-xs w-5 shrink-0 text-right">{i + 1}</span>
+            <span className="font-display text-[13px] font-bold w-[140px] shrink-0 truncate">{team.name}</span>
+            <span className="text-xs text-muted w-16 shrink-0">
+              {t('fixtures.swingAvgFdr')} {team.avgFDR != null ? team.avgFDR.toFixed(1) : '—'}
+            </span>
+            <FdrBadges fixtures={team.fixtures} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function FixtureGrid() {
   const { t } = useLang();
   const [data, setData] = useState(null);
@@ -119,6 +158,7 @@ export default function FixtureGrid() {
   return (
     <div>
       <DgwBgwBanner data={data} t={t} />
+      <FixtureSwing data={data} t={t} />
 
       <div className="table-wrap">
         <table className="fixture-grid">
