@@ -47,6 +47,16 @@ export function ChipsIcon(props) {
   );
 }
 
+export function RivalryIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 4h6l1 5-3 3-4-4V4Z" />
+      <path d="M20 4h-6l-1 5 3 3 4-4V4Z" />
+      <path d="M11 12v8M8 20h6" />
+    </svg>
+  );
+}
+
 export function BonusIcon(props) {
   return (
     <svg {...base} {...props}>
