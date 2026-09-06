@@ -1,17 +1,23 @@
 import { useLang } from './i18n.jsx';
+import Tooltip from './Tooltip.jsx';
 
-// Badges here keep native title= tooltips (not the Tooltip.jsx component used
-// elsewhere) — .jersey-badge/.priority-badge rely on position:absolute
-// resolving against .jersey-chip's position:relative (see the clip-path
-// note below), and Tooltip.jsx's wrapper span would insert an extra
-// non-positioned element into that chain. It's very likely harmless (a
-// non-positioned ancestor is skipped when resolving an absolute-positioned
-// descendant's containing block), but this exact area has already had two
-// real layout bugs from clip-path/absolute-positioning interactions — not
-// worth the risk for a tooltip fix on badges most users glance at without
-// hovering, even now that a browser is available to check the result with
-// (verified 2026-09-05: current rendering is correct; this note is about
-// the risk of the *next* change here, not an excuse about unverifiability).
+// These badges used to keep native title= tooltips instead of the shared
+// Tooltip.jsx component, out of caution: .jersey-badge/.priority-badge rely
+// on position:absolute resolving against .jersey-chip's position:relative
+// (see the clip-path note below), and this exact area has already had two
+// real layout bugs from clip-path/absolute-positioning interactions. Switched
+// over after a user screenshot showed the same native-tooltip inconsistency
+// already fixed in FixtureGrid.jsx — badges here render as plain, unstyled
+// browser tooltips next to every Material-styled Tooltip elsewhere in the
+// app, and (as here) the position can end up floating away from the badge
+// entirely instead of pointing at it, since the browser — not the page —
+// decides where a native tooltip appears. The concern about breaking
+// .jersey-chip's position:relative anchoring turned out to be unfounded:
+// Tooltip's `className` prop is applied directly to its own single Trigger
+// element (see Tooltip.jsx), not to an extra wrapper around the badge, so
+// passing the badge's own classes there keeps it a single element in
+// exactly the same DOM position as the old title= span — visually verified
+// with real screenshots below, not just reasoned about.
 
 // Deterministic team color so every team gets a stable, distinct jersey color
 // without maintaining a 20-team lookup table (no team-crest/kit assets in this app).
@@ -78,19 +84,23 @@ function JerseyChip({ player, priority, t }) {
           (cuts it into a jersey silhouette), and clip-path clips ALL descendants
           including absolutely-positioned ones, so badges placed inside it never render. */}
       {player.isCaptain && (
-        <span className="badge cap jersey-badge" title={t('squad.captain')}>C</span>
+        <Tooltip content={t('squad.captain')} className="badge cap jersey-badge">C</Tooltip>
       )}
       {player.isViceCaptain && (
-        <span className="badge vice jersey-badge" title={t('squad.viceCaptain')}>VC</span>
+        <Tooltip content={t('squad.viceCaptain')} className="badge vice jersey-badge">VC</Tooltip>
       )}
       {priority && (
-        <span className="priority-badge" title={t('pitch.priorityTitle', { rank: priority })}>
+        <Tooltip content={t('pitch.priorityTitle', { rank: priority })} className="priority-badge">
           {priority}
-        </span>
+        </Tooltip>
       )}
       <div className="jersey-name">
         {player.name}
-        {player.status !== 'a' && <span className="news" title={player.news || player.status}> ⚑</span>}
+        {player.status !== 'a' && (
+          <Tooltip content={player.news || player.status} className="news">
+            {' '}⚑
+          </Tooltip>
+        )}
       </div>
       <div className="jersey-price">£{player.price.toFixed(1)}m</div>
     </div>
