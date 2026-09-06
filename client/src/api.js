@@ -71,3 +71,15 @@ export async function fetchChipPlan(teamId, eventId) {
   }
   return res.json();
 }
+
+export async function fetchBonusPredictor(eventId) {
+  const params = new URLSearchParams();
+  if (eventId) params.set('eventId', String(eventId));
+  const qs = params.toString();
+  const res = await fetch(`${API}/bonus-predictor${qs ? `?${qs}` : ''}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to load bonus predictor (${res.status})`);
+  }
+  return res.json();
+}

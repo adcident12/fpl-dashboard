@@ -747,6 +747,85 @@ table.scan .arrow-cell {
   pointer-events: none;
 }
 
+/* ---- Live Bonus Predictor (BonusView.jsx) ---- */
+.bonus-fixture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.bonus-fixture-card {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line);
+  background: var(--color-panel-2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  padding: 12px;
+}
+.bonus-fixture-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.bonus-fixture-teams {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+}
+.bonus-live-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border-radius: 9999px;
+  padding: 2px 8px;
+}
+.bonus-live-tag.live {
+  background: var(--color-hard);
+  color: #fff;
+}
+.bonus-live-tag.final {
+  background: var(--color-panel-3);
+  color: var(--color-muted);
+  border: 1px solid var(--color-line);
+}
+.bonus-player-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.bonus-player-table th {
+  text-align: left;
+  color: var(--color-muted);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-bottom: 4px;
+}
+.bonus-player-table td {
+  padding: 3px 0;
+  border-top: 1px solid var(--color-line);
+}
+.bonus-player-table td.num,
+.bonus-player-table th.num {
+  text-align: right;
+  white-space: nowrap;
+}
+/* Gold/silver/bronze — 3/2/1 predicted or confirmed bonus points. A runtime
+   value (bonus-${n}), so it needs a hand-written class the same way
+   .pos-${positionId}/.fdr-${bucket} do (see CLAUDE.md's Tailwind-exemption list). */
+.badge.bonus-3 {
+  background: #ffd54f;
+  color: #1a1a1a;
+}
+.badge.bonus-2 {
+  background: #b0bec5;
+  color: #1a1a1a;
+}
+.badge.bonus-1 {
+  background: #bf8970;
+  color: #1a1a1a;
+}
+
 /* ============================================================
    Responsive
    Two breakpoints: 900px tightens layout (tablet), 640px stacks

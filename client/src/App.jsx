@@ -4,12 +4,13 @@ import FixtureGrid from './FixtureGrid.jsx';
 import SquadView from './SquadView.jsx';
 import SuggestionsView from './SuggestionsView.jsx';
 import ChipsView from './ChipsView.jsx';
+import BonusView from './BonusView.jsx';
 import GuideView from './GuideView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
-import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, GuideIcon } from './Icons.jsx';
+import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, BonusIcon, GuideIcon } from './Icons.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -46,6 +47,7 @@ const TAB_VIEWS = {
   squad: <SquadView />,
   suggestions: <SuggestionsView />,
   chips: <ChipsView />,
+  bonus: <BonusView />,
   guide: <GuideView />,
 };
 
@@ -55,6 +57,7 @@ const TABS = [
   { key: 'squad', labelKey: 'nav.squad', Icon: SquadIcon },
   { key: 'suggestions', labelKey: 'nav.suggestions', Icon: SuggestionsIcon },
   { key: 'chips', labelKey: 'nav.chips', Icon: ChipsIcon },
+  { key: 'bonus', labelKey: 'nav.bonus', Icon: BonusIcon },
   { key: 'guide', labelKey: 'nav.guide', Icon: GuideIcon },
 ];
 

@@ -12,6 +12,7 @@ import {
   buildCaptainSuggestions,
   buildSquadScan,
   buildChipPlan,
+  buildBonusPredictor,
   getFixtures,
   getElementSummary,
   getEntryPicks,
@@ -153,6 +154,18 @@ app.get('/api/chips', async (req, res) => {
   } catch (e) {
     const status = /404/.test(e.message) ? 404 : 502;
     res.status(status).json({ error: e.message });
+  }
+});
+
+// Live bonus point predictor — league-wide, no team needed. ?eventId=
+// optional (defaults to the current live gameweek). Live match data, so it
+// asks for fresher-than-usual data internally (see LIVE_BONUS_TTL_MS).
+app.get('/api/bonus-predictor', async (req, res) => {
+  try {
+    const eventId = req.query.eventId ? Number(req.query.eventId) : null;
+    res.json(await buildBonusPredictor(eventId));
+  } catch (e) {
+    res.status(502).json({ error: e.message });
   }
 });
 

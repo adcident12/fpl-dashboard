@@ -23,8 +23,14 @@ export function getEntryPicks(teamId, eventId) {
     fetchJson(`${BASE}/entry/${teamId}/event/${eventId}/picks/`)
   );
 }
-export function getEventLive(eventId) {
-  return getCached(`event-live-${eventId}`, () => fetchJson(`${BASE}/event/${eventId}/live/`));
+// `ttlMs` lets a caller ask for fresher data than the app-wide 5 minute
+// default without affecting other callers of the same cache key — the
+// freshness check happens per read against the file's own timestamp, not a
+// TTL stored with the file (see cache.js), so buildSquad() (default TTL) and
+// buildBonusPredictor() (a short TTL, since live match BPS changes minute to
+// minute) can safely disagree about how stale is "stale" for the same data.
+export function getEventLive(eventId, ttlMs) {
+  return getCached(`event-live-${eventId}`, () => fetchJson(`${BASE}/event/${eventId}/live/`), ttlMs);
 }
 export function getEntryHistory(teamId) {
   return getCached(`entry-history-${teamId}`, () => fetchJson(`${BASE}/entry/${teamId}/history/`));
@@ -855,4 +861,114 @@ export async function buildChipPlan(teamId, eventId) {
     windows,
     recommendations,
   };
+}
+
+// --- Live Bonus Point Predictor -------------------------------------------
+// Live data during a match changes minute to minute — much faster than the
+// app-wide 5 minute default cache TTL is meant for. This is the one endpoint
+// that deliberately asks for fresher data.
+const LIVE_BONUS_TTL_MS = 60 * 1000;
+
+// FPL's actual bonus tie-break rule: rank all players in a fixture by BPS
+// descending, group players tied on the exact same BPS value, and award the
+// GROUP's *starting* rank's points to every member of that group — the next
+// distinct-value group then starts counting from rank+groupSize, not
+// rank+1, so a skipped placement (e.g. 2 players tied for 1st leaves no
+// "2nd place") is reproduced correctly. Verified against FPL's documented
+// examples: 2 tied for 1st both get 3 (next distinct player gets 1, "2nd"
+// is skipped); 3 tied for 1st all get 3 and nobody else scores bonus.
+const BONUS_BY_RANK = { 1: 3, 2: 2, 3: 1 };
+
+export function computeBonusPoints(players) {
+  const sorted = [...players].sort((a, b) => b.bps - a.bps);
+  const result = [];
+  let rank = 1;
+  let i = 0;
+  while (i < sorted.length) {
+    let j = i;
+    while (j < sorted.length && sorted[j].bps === sorted[i].bps) j++;
+    const groupSize = j - i;
+    // A 0 (or negative) BPS never earns bonus even if it happens to be the
+    // top of the list — this only matters in the first few live minutes of a
+    // match, before anyone has accrued any BPS at all.
+    const points = sorted[i].bps > 0 ? BONUS_BY_RANK[rank] ?? 0 : 0;
+    for (let k = i; k < j; k++) result.push({ ...sorted[k], predictedBonus: points });
+    rank += groupSize;
+    i = j;
+  }
+  return result;
+}
+
+/**
+ * Fan feature — live bonus point predictor. FPL only confirms bonus points
+ * once a match is fully finished; this projects them live from each player's
+ * current BPS so fans can see who's "in the bonus" during play.
+ * Grouped by FIXTURE, not by gameweek as a whole — bonus is awarded
+ * per-match, so a player's BPS is never compared against players from a
+ * different match. Only fixtures that have kicked off (`started`) are
+ * included; a fixture that hasn't started yet has nothing meaningful to show.
+ * Each player's fixture is read from `explain[0].fixture` (live stats are
+ * fixture-scoped there) rather than assumed from the team's single fixture
+ * that event, so this still behaves sensibly if a player's `explain` is
+ * empty (not yet involved) — such players are simply left out.
+ */
+export async function buildBonusPredictor(eventId) {
+  const [bootstrap, fixtures] = await Promise.all([getBootstrap(), getFixtures()]);
+  const currentEvent = bootstrap.events.find((e) => e.is_current);
+  const ev = eventId ?? currentEvent?.id ?? 1;
+  const live = await getEventLive(ev, LIVE_BONUS_TTL_MS);
+
+  const teams = new Map(bootstrap.teams.map((t) => [t.id, t]));
+  const elementsById = new Map(bootstrap.elements.map((el) => [el.id, el]));
+  const eventFixtures = fixtures.filter((f) => f.event === ev && f.started);
+  const fixturesById = new Map(eventFixtures.map((f) => [f.id, f]));
+
+  const byFixture = new Map();
+  for (const e of live.elements ?? []) {
+    const fixtureId = e.explain?.[0]?.fixture;
+    const fixture = fixturesById.get(fixtureId);
+    if (!fixture) continue; // not started yet, or not involved in a started fixture
+    const el = elementsById.get(e.id);
+    if (!el || e.stats.minutes <= 0) continue;
+    if (!byFixture.has(fixtureId)) byFixture.set(fixtureId, []);
+    byFixture.get(fixtureId).push({
+      id: e.id,
+      name: el.web_name,
+      teamShort: teams.get(el.team)?.short_name ?? '?',
+      positionId: el.element_type,
+      position: POSITION_MAP[el.element_type] ?? '?',
+      bps: e.stats.bps,
+      confirmedBonus: e.stats.bonus,
+    });
+  }
+
+  const fixturesOut = eventFixtures.map((f) => {
+    const homeTeam = teams.get(f.team_h);
+    const awayTeam = teams.get(f.team_a);
+    const players = computeBonusPoints(byFixture.get(f.id) ?? []).sort(
+      (a, b) => b.bps - a.bps
+    );
+    return {
+      fixtureId: f.id,
+      homeTeamShort: homeTeam?.short_name ?? '?',
+      awayTeamShort: awayTeam?.short_name ?? '?',
+      homeScore: f.team_h_score,
+      awayScore: f.team_a_score,
+      // Quirk (same as buildFixtureGrid()'s `done`): a match can sit at
+      // finished=false / finished_provisional=true — full time has been
+      // played and bonus is already locked in, but FPL hasn't flipped the
+      // official "finished" flag yet (that lags by up to ~1h). Treating
+      // only `finished` as "match over" would show a stale LIVE tag on a
+      // match whose bonus has already been confirmed.
+      finished: f.finished || f.finished_provisional,
+      minutes: f.minutes ?? null,
+      // Once finished, FPL's own confirmedBonus is authoritative — the
+      // predicted value can differ from it in rare cases (e.g. a red-card
+      // point deduction happening after BPS is locked in), so the client can
+      // tell "still live projection" from "match over, this is official".
+      players,
+    };
+  });
+
+  return { eventId: ev, fixtures: fixturesOut };
 }

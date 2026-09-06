@@ -181,6 +181,29 @@ const chipWindow = {
   },
 };
 
+const bonusPlayer = {
+  type: 'object',
+  properties: {
+    id: { type: 'integer' }, name: { type: 'string' }, teamShort: { type: 'string' },
+    positionId: { type: 'integer' }, position: { type: 'string' },
+    bps: { type: 'integer', description: 'Live Bonus Points System score, from event/{gw}/live/.' },
+    confirmedBonus: { type: 'integer', description: 'FPL\'s own already-awarded bonus (0 until the match is finished and bonus is locked in).' },
+    predictedBonus: { type: 'integer', enum: [0, 1, 2, 3], description: 'Projected bonus (3/2/1) from the current BPS standings, using FPL\'s own tie-break rule (tied players share the higher rank\'s points; the next distinct group skips the taken ranks).' },
+  },
+};
+
+const bonusFixture = {
+  type: 'object',
+  properties: {
+    fixtureId: { type: 'integer' },
+    homeTeamShort: { type: 'string' }, awayTeamShort: { type: 'string' },
+    homeScore: { type: 'integer', nullable: true }, awayScore: { type: 'integer', nullable: true },
+    finished: { type: 'boolean', description: 'Once true, `confirmedBonus` on each player is authoritative — predictedBonus may occasionally still differ in rare edge cases.' },
+    minutes: { type: 'integer', nullable: true },
+    players: { type: 'array', items: bonusPlayer, description: 'Sorted by BPS descending. Only players with minutes > 0 in this fixture are included.' },
+  },
+};
+
 const errorResponses = {
   400: { description: 'Missing a required query parameter.', content: { 'application/json': { schema: errorResponse } } },
   404: { description: 'The team/gameweek doesn\'t exist in FPL (e.g. a gameweek before the team was created).', content: { 'application/json': { schema: errorResponse } } },
@@ -211,6 +234,7 @@ export const openapiSpec = {
     { name: 'Squad', description: 'A specific FPL team\'s picks.' },
     { name: 'Suggestions', description: 'The transparent scoring engine — transfer, captain, and whole-squad-scan suggestions.' },
     { name: 'Chips', description: 'Wildcard/Free Hit/Bench Boost/Triple Captain window tracking and recommendations.' },
+    { name: 'Live', description: 'In-play data that changes faster than the app-wide 5 minute cache — fetched with a shorter TTL.' },
   ],
   paths: {
     '/health': {
@@ -405,6 +429,22 @@ export const openapiSpec = {
             recommendations: { type: 'array', items: { type: 'object', properties: { chip: { type: 'string' }, label: { type: 'string' }, reason: { type: 'string' }, detail: { type: 'object' } } } },
           } } } } },
           400: errorResponses[400], 404: errorResponses[404], 502: errorResponses[502],
+        },
+      },
+    },
+    '/bonus-predictor': {
+      get: {
+        operationId: 'getBonusPredictor', tags: ['Live'],
+        summary: 'Live bonus point projection for every in-progress fixture this gameweek',
+        description:
+          'FPL only confirms bonus points once a match is fully finished; this projects them live from each player\'s ' +
+          'current BPS (Bonus Points System score) using FPL\'s own tie-break rule, grouped per fixture (never compared ' +
+          'across different matches). Only fixtures that have kicked off are included. League-wide — no team ID needed. ' +
+          'Uses a 60-second cache instead of the app-wide 5 minutes, since BPS changes minute to minute during play.',
+        parameters: [{ ...eventIdParam, description: 'Gameweek ID. Defaults to the current gameweek.' }],
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { eventId: { type: 'integer' }, fixtures: { type: 'array', items: bonusFixture } } } } } },
+          502: errorResponses[502],
         },
       },
     },

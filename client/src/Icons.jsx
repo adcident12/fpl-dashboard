@@ -47,6 +47,14 @@ export function ChipsIcon(props) {
   );
 }
 
+export function BonusIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
+    </svg>
+  );
+}
+
 export function GuideIcon(props) {
   return (
     <svg {...base} {...props}>
