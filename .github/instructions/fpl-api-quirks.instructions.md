@@ -65,7 +65,8 @@ These mappings were verified against a **real** `bootstrap-static` / `fixtures` 
 - `team_h`, `team_a` — home/away team **IDs**.
 - **FDR is per-team, not a single field:** `team_h_difficulty` and `team_a_difficulty`. Values are a **1-5 scale (1=easiest, 5=hardest)** — in practice the data shows 2-5. There is NO single `difficulty` field.
 - **Display bucketing** (for color scales): 1-2 = easy, 3 = medium, 4-5 = hard.
-- `finished`, `started`, `kickoff_time` (ISO), `team_h_score`, `team_a_score`.
+- `finished`, `started`, `kickoff_time` (ISO 8601 **UTC** — the app converts to the viewer's local time client-side via `Date`/`toLocaleString()`, never displays the raw UTC string), `team_h_score`, `team_a_score`.
+- `kickoff_time` can be **`null`** — FPL doesn't always have a confirmed time yet (a gameweek far enough in the future, or a fixture awaiting rescheduling after a postponement). Handle this explicitly (e.g. a "TBC" fallback) rather than passing it straight into `new Date(null)`, which silently produces `1970-01-01`.
 
 ## Entry picks (`entry/{id}/event/{gw}/picks/`)
 Verified against a real response (2026-09-05) — this shape does **not** match what an earlier version of this codebase assumed:

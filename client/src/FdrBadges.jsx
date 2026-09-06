@@ -11,6 +11,33 @@ export function fdrBucket(d) {
 
 const FDR_LABEL_KEY = { easy: 'fdr.easy', med: 'fdr.med', hard: 'fdr.hard' };
 
+// Kickoff times come from the API as ISO 8601 UTC (or null when FPL hasn't
+// confirmed one yet); toLocaleString() with no locale/timeZone argument
+// converts to the viewer's own browser locale/timezone, matching how the
+// app already formats every other date (App.jsx's deadline/freshness
+// tooltips) — so "when do I watch this" is answered in local time, not UTC.
+// Exported so FixtureGrid.jsx's own tooltip (the one place fixtures render
+// outside this shared component) can show the exact same wording.
+export function formatKickoff(iso, t) {
+  if (!iso) return t('fdr.kickoffTbc');
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// A terser variant for FixtureGrid.jsx's own cell face (not just its
+// tooltip) — the grid's own gameweek columns already narrow things down to
+// a specific week, so weekday+time (no month/day) is enough to answer
+// "which day, what time" without crowding an already-small cell.
+export function formatKickoffShort(iso, t) {
+  if (!iso) return t('fdr.kickoffTbc');
+  return new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
 // Shared by the Players table, My Squad, and Suggestions (transfer/captain
 // candidates + quick squad scan) — one fixture-difficulty badge row per player.
 export default function FdrBadges({ fixtures }) {
@@ -24,6 +51,7 @@ export default function FdrBadges({ fixtures }) {
           event: f.event,
           opponent: f.opponentName,
           side: f.home ? t('fdr.home') : t('fdr.away'),
+          kickoff: formatKickoff(f.kickoffTime, t),
           fdr: f.difficulty,
           label: t(FDR_LABEL_KEY[bucket]),
         });

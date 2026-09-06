@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchFixtureGrid } from './api.js';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
-import FdrBadges, { fdrBucket } from './FdrBadges.jsx';
+import FdrBadges, { fdrBucket, formatKickoff, formatKickoffShort } from './FdrBadges.jsx';
 import { teamColor } from './PitchView.jsx';
 import { useLang } from './i18n.jsx';
 
@@ -26,7 +26,7 @@ function FixtureRow({ f, t }) {
   const bg = FDR_BG[f.difficulty] ?? '#37474f';
   const dark = f.difficulty >= 4;
   const side = f.home ? t('fixtures.home') : t('fixtures.away');
-  const title = `vs ${f.opponentName} (${side}) — FDR ${f.difficulty}/5`;
+  const title = `vs ${f.opponentName} (${side}) — ${formatKickoff(f.kickoffTime, t)} — FDR ${f.difficulty}/5`;
   return (
     <Tooltip as="div" content={title}>
       <div
@@ -36,10 +36,12 @@ function FixtureRow({ f, t }) {
         <span className="cell-opp">
           {f.home ? 'v' : '@'} {f.opponentShort}
         </span>
-        {f.done && (
+        {f.done ? (
           <span className="cell-score">
             {f.scoreFor}–{f.scoreAgainst}
           </span>
+        ) : (
+          <span className="cell-kickoff">{formatKickoffShort(f.kickoffTime, t)}</span>
         )}
       </div>
     </Tooltip>

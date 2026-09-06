@@ -69,6 +69,11 @@ export async function buildData() {
         opponentName: teams.get(oppId)?.name ?? '?',
         home: side === 'h',
         difficulty,
+        // ISO 8601 UTC, or null when FPL hasn't confirmed a kickoff time yet
+        // (common for gameweeks further out, or a fixture awaiting
+        // rescheduling) — the client converts to the viewer's local time
+        // via Date/toLocaleString rather than displaying UTC directly.
+        kickoffTime: f.kickoff_time,
       });
     }
   }
@@ -233,6 +238,9 @@ export async function buildFixtureGrid() {
           done: f.finished || f.finished_provisional,
           scoreFor: home ? f.team_h_score : f.team_a_score,
           scoreAgainst: home ? f.team_a_score : f.team_h_score,
+          // ISO 8601 UTC, or null when not yet confirmed — see buildData()'s
+          // identical field for why this isn't pre-formatted server-side.
+          kickoffTime: f.kickoff_time,
         };
       });
     });
@@ -438,6 +446,7 @@ async function getSquadContext(teamId, eventId) {
         opponentName: teamsById.get(oppId)?.name ?? '?',
         home: side === 'h',
         difficulty: f[`team_${side}_difficulty`],
+        kickoffTime: f.kickoff_time,
       });
     }
   }

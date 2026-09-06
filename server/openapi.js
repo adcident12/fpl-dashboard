@@ -25,6 +25,7 @@ const nextFixture = {
     opponentName: { type: 'string', example: 'Arsenal' },
     home: { type: 'boolean' },
     difficulty: { type: 'integer', minimum: 1, maximum: 5, description: 'FDR: 1 = easiest, 5 = hardest.' },
+    kickoffTime: { type: 'string', format: 'date-time', nullable: true, description: 'ISO 8601 UTC. null when FPL hasn\'t confirmed a kickoff time yet.' },
   },
 };
 
@@ -321,7 +322,7 @@ export const openapiSpec = {
                           fixtures: {
                             type: 'array',
                             description: 'One entry per gameweek in `gameweeks`; each entry is an array of 0+ fixture objects.',
-                            items: { type: 'array', items: { type: 'object', properties: { event: { type: 'integer' }, opponentId: { type: 'integer' }, opponentShort: { type: 'string' }, opponentName: { type: 'string' }, home: { type: 'boolean' }, difficulty: { type: 'integer' }, done: { type: 'boolean' }, scoreFor: { type: 'integer', nullable: true }, scoreAgainst: { type: 'integer', nullable: true } } } },
+                            items: { type: 'array', items: { type: 'object', properties: { event: { type: 'integer' }, opponentId: { type: 'integer' }, opponentShort: { type: 'string' }, opponentName: { type: 'string' }, home: { type: 'boolean' }, difficulty: { type: 'integer' }, done: { type: 'boolean' }, scoreFor: { type: 'integer', nullable: true }, scoreAgainst: { type: 'integer', nullable: true }, kickoffTime: { type: 'string', format: 'date-time', nullable: true } } } },
                           },
                         },
                       },
