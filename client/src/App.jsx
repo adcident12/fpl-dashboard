@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchPlayers } from './api.js';
 import FixtureGrid from './FixtureGrid.jsx';
 import SquadView from './SquadView.jsx';
@@ -94,6 +94,16 @@ export default function App() {
   const [minOwnership, setMinOwnership] = useState(0);
   const [diffOnly, setDiffOnly] = useState(false);
   const [tab, setTab] = useState('players');
+  const bottomNavRefs = useRef(new Map());
+
+  // With 9 tabs, the bottom bar can't fit every icon+label at a comfortable
+  // size on a phone (that's exactly what made it feel cramped — see the
+  // Mobile primary navigation note in CLAUDE.md). It scrolls horizontally
+  // instead now, so this keeps the active tab actually visible whenever it
+  // changes, rather than leaving the user to discover the scroll on their own.
+  useEffect(() => {
+    bottomNavRefs.current.get(tab)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [tab]);
 
   const COLUMNS = [
     { key: 'name', label: t('table.player'), sortable: true },
@@ -237,17 +247,32 @@ export default function App() {
           pattern: icon + short label, always reachable, doesn't compete with
           page content for width). Hidden sm: and up, where the header's own
           nav takes over. max-sm:pb-20 on the outer wrapper above keeps this
-          from covering the last bit of scrolled content. */}
+          from covering the last bit of scrolled content.
+          Scrolls horizontally instead of splitting the bar into 9 equal
+          flex-1 slices — at 9 tabs, equal-width slices squeezed every
+          icon+label into ~45px on a phone, which read as cramped (a real
+          user complaint, not a hypothetical one). Each button keeps a fixed,
+          comfortable min-width and the row scrolls — the native touch-scroll
+          this already gets from `overflow-x-auto` on a touch device IS the
+          swipe gesture, so no separate gesture library is needed for it.
+          Scrollbar hidden via the `.no-scrollbar` utility in styles.css
+          (a runtime-value class would be pointless here since there's
+          nothing to parameterize, but scrollbar-hiding needs vendor
+          pseudo-elements Tailwind has no utility for). */}
       <nav
-        className="hidden max-sm:flex fixed bottom-0 inset-x-0 z-40 bg-panel border-t border-line shadow-[0_-2px_8px_rgba(0,0,0,0.3)]"
+        className="no-scrollbar hidden max-sm:flex fixed bottom-0 inset-x-0 z-40 bg-panel border-t border-line shadow-[0_-2px_8px_rgba(0,0,0,0.3)] overflow-x-auto"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {TABS.map((tb) => (
           <button
             key={tb.key}
+            ref={(el) => {
+              if (el) bottomNavRefs.current.set(tb.key, el);
+              else bottomNavRefs.current.delete(tb.key);
+            }}
             type="button"
             onClick={() => setTab(tb.key)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 cursor-pointer transition-colors ${tab === tb.key ? 'text-accent' : 'text-muted'}`}
+            className={`shrink-0 min-w-[64px] flex flex-col items-center justify-center gap-0.5 py-2 px-1 cursor-pointer transition-colors ${tab === tb.key ? 'text-accent' : 'text-muted'}`}
           >
             <tb.Icon className="w-5 h-5" />
             <span className="font-display text-[10px] font-bold tracking-[0.02em] uppercase">{t(tb.labelKey)}</span>
@@ -330,7 +355,7 @@ export default function App() {
         <span className="ml-auto text-muted text-xs max-sm:text-right">{t('filters.shown', { count: filtered.length })}</span>
       </div>
 
-      <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
+      <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm max-sm:max-h-none max-sm:overflow-visible">
         <table className="players">
           <thead>
             <tr>

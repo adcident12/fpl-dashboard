@@ -747,6 +747,20 @@ table.scan .arrow-cell {
   pointer-events: none;
 }
 
+/* ---- Scrollbar hiding (App.jsx's mobile bottom tab bar) ----
+   Scrolling is the whole point here (that's how a 9-tab bar becomes
+   swipeable instead of cramped), but a visible scrollbar on a fixed bottom
+   bar reads as a stray UI glitch rather than an intentional app chrome
+   element on most platforms — every native mobile tab bar hides it too.
+   No Tailwind utility covers the vendor-specific scrollbar pseudo-elements. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ---- Live Bonus Predictor (BonusView.jsx) ---- */
 .bonus-fixture-grid {
   display: grid;

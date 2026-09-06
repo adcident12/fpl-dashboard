@@ -108,7 +108,7 @@ export default function SquadView() {
       {!error && data && <PitchView squad={data.squad} scan={scan?.rows} />}
 
       {!error && data && (
-        <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
+        <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm max-sm:max-h-none max-sm:overflow-visible">
           <table className="players squad">
             <thead>
               <tr>

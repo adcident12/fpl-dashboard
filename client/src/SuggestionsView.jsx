@@ -383,7 +383,7 @@ export default function SuggestionsView() {
             {scanError && <div className="py-10 text-center text-[#ff8a80]">{scanError}</div>}
 
             {scan && (
-              <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
+              <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm max-sm:max-h-none max-sm:overflow-visible">
                 <table className="players sug scan">
                   <thead>
                     <tr>
@@ -452,7 +452,7 @@ export default function SuggestionsView() {
                     bank: transfers.bank.toFixed(2),
                   })}
                 </div>
-                <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
+                <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm max-sm:max-h-none max-sm:overflow-visible">
                   <table className="players sug">
                     <thead>
                       <tr>
@@ -496,7 +496,7 @@ export default function SuggestionsView() {
             {captain && (
               <>
                 <div className="text-[13px] text-muted mb-2.5">{t('sug.captainNote')}</div>
-                <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm">
+                <div className="overflow-auto border border-line rounded-md max-h-[72vh] shadow-sm max-sm:max-h-none max-sm:overflow-visible">
                   <table className="players sug">
                     <thead>
                       <tr>
