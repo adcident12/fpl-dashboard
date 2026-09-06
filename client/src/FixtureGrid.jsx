@@ -119,13 +119,14 @@ function computeFixtureSwing(data) {
     .map((team, i) => ({ ...team, rank: i }));
 }
 
-// Top/bottom 3 get a color-coded accent border — same green/red vocabulary
-// as the FDR badges themselves, so "easiest run" / "hardest run" reads at a
-// glance instead of requiring a read of the numbers.
-function swingAccent(rank, total) {
-  if (rank < 3) return 'border-l-easy';
-  if (rank >= total - 3) return 'border-l-hard';
-  return 'border-l-transparent';
+// Top/bottom 3 get their rank number colored — same green/red vocabulary as
+// the FDR badges themselves, so "easiest run" / "hardest run" reads at a
+// glance without a full-row border/tint competing with the meter bar's own
+// per-row coloring right next to it.
+function swingRankClass(rank, total) {
+  if (rank < 3) return 'text-easy';
+  if (rank >= total - 3) return 'text-hard';
+  return 'text-muted';
 }
 
 // A compact fill-bar next to the average — the same "read the run at a
@@ -134,24 +135,32 @@ function swingAccent(rank, total) {
 // difficulty total with a color scale). Bucketed into the same 3 tones as
 // FdrBadges (easy/med/hard) rather than a 5-stop gradient, so it reads with
 // the same vocabulary as every other FDR indicator in the app.
+// Written as a lookup of COMPLETE class-name strings, not `bg-${bucket}` —
+// Tailwind's compiler statically scans source for whole class-name strings,
+// so a template-built name is invisible to it (the exact trap CLAUDE.md
+// documents for pos-${positionId}/fdr-${bucket}); `bg-${bucket}` here would
+// only "work" by accident for whichever bucket name happens to already
+// appear literally elsewhere in the codebase (bg-easy/bg-hard do, from the
+// sort-toggle buttons below — bg-med doesn't appear anywhere else, so every
+// medium-difficulty bar silently rendered with no fill color at all).
+const METER_FILL_CLASS = { easy: 'bg-easy', med: 'bg-med', hard: 'bg-hard' };
+
 function DifficultyMeter({ avgFDR }) {
   if (avgFDR == null) return <div className="w-14 shrink-0" />;
   const pct = Math.max(6, Math.min(100, ((5 - avgFDR) / 4) * 100));
   const bucket = fdrBucket(Math.round(avgFDR));
   return (
     <div className="w-14 h-1.5 rounded-full bg-panel-3 overflow-hidden shrink-0">
-      <div className={`h-full rounded-full bg-${bucket}`} style={{ width: `${pct}%` }} />
+      <div className={`h-full rounded-full ${METER_FILL_CLASS[bucket]}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
 function FixtureSwingRow({ team, total, t }) {
   return (
-    <div
-      className={`flex items-center gap-3 border-l-[3px] pl-2.5 py-1.5 rounded-sm transition-colors hover:bg-panel-2 max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:py-2 ${swingAccent(team.rank, total)}`}
-    >
+    <div className="flex items-center gap-3 px-2.5 py-1.5 rounded-sm transition-colors hover:bg-panel-2 max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:py-2">
       <div className="flex items-center gap-2.5 shrink-0 min-w-0">
-        <span className="text-muted text-xs w-5 shrink-0 text-right">{team.rank + 1}</span>
+        <span className={`text-xs w-5 shrink-0 text-right font-bold ${swingRankClass(team.rank, total)}`}>{team.rank + 1}</span>
         <span
           className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-display font-bold text-white shrink-0"
           style={{ background: teamColor(team.shortName) }}
