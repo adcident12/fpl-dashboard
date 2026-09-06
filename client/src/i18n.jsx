@@ -238,6 +238,10 @@ const STRINGS = {
     'rivalry.final': 'Final',
     'rivalry.vs': 'vs',
     'rivalry.fdrForTitle': 'Fixture difficulty for {{team}} in this match',
+    'rivalry.topByPoints': 'Top points',
+    'rivalry.topScorers': 'Top scorers',
+    'rivalry.goals': 'G',
+    'rivalry.assists': 'A',
 
     'setpieces.title': 'Set-Piece Takers',
     'setpieces.note': "Each club's designated penalty, free-kick, and corner takers, in order (1 = first choice) — straight from the FPL API. Informational only, like the penalty badge elsewhere in the app: not weighted into any score, since who actually takes a given set piece on the day is too unpredictable to model.",
@@ -489,6 +493,10 @@ const STRINGS = {
     'rivalry.final': 'จบแล้ว',
     'rivalry.vs': 'พบ',
     'rivalry.fdrForTitle': 'ความยากง่ายของนัดนี้สำหรับ {{team}}',
+    'rivalry.topByPoints': 'แต้มสูงสุด',
+    'rivalry.topScorers': 'ดาวซัลโว',
+    'rivalry.goals': 'ประตู',
+    'rivalry.assists': 'แอสซิสต์',
 
     'setpieces.title': 'ผู้เตะลูกตั้งเตะ',
     'setpieces.note': 'ผู้เตะจุดโทษ, ฟรีคิก และคอร์เนอร์อันดับต้นๆ ของแต่ละทีม (1 = ตัวเลือกแรก) — ข้อมูลตรงจาก FPL API ใช้เพื่อดูข้อมูลเท่านั้น เหมือน badge จุดโทษในหน้าอื่นๆ ของแอป ไม่ถูกเอาไปคิดคะแนน เพราะคาดเดายากว่าใครจะได้เตะจริงในแต่ละนัด',

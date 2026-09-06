@@ -6,6 +6,7 @@ import PitchView, { teamColor } from './PitchView.jsx';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
 import { fdrBucket, formatKickoff, isMatchday } from './FdrBadges.jsx';
+import { computeStandings, FormPills } from './TableView.jsx';
 import { useLang } from './i18n.jsx';
 
 // The rival slot gets its own localStorage key so it doesn't clobber the
@@ -229,6 +230,37 @@ function seriesRecord(meetings, idA) {
   return { winsA, winsB, draws, played: winsA + winsB + draws };
 }
 
+// Season-standings snapshot for both clubs, side by side, above the meeting
+// list — a user picking two clubs wants "how are these two doing right now"
+// before drilling into individual legs. Reuses TableView's own
+// computeStandings() (same /api/teams + /api/fixtures this tab already
+// fetches) rather than a second, parallel league-table calculation, and its
+// FormPills so a club's last-5 reads identically here and on the Table tab.
+function ClubFormStrip({ standings, teamA, teamB, t }) {
+  const rowA = standings.find((r) => r.id === teamA.id);
+  const rowB = standings.find((r) => r.id === teamB.id);
+  if (!rowA || !rowB) return null;
+  return (
+    <div className="bg-panel border border-line rounded-md p-4 mb-3.5 shadow-sm grid grid-cols-2 gap-4 max-sm:grid-cols-1">
+      {[
+        { club: teamA, row: rowA },
+        { club: teamB, row: rowB },
+      ].map(({ club, row }) => (
+        <div key={club.id} className="flex items-center gap-3 flex-wrap">
+          <ClubAvatar shortName={club.shortName} />
+          <div className="flex-1 min-w-[120px]">
+            <div className="font-display text-sm font-bold">{club.name}</div>
+            <div className="text-xs text-muted">
+              #{row.rank} · {row.points} {t('table.pts')} · {row.gd > 0 ? `+${row.gd}` : row.gd} {t('table.gd')}
+            </div>
+          </div>
+          <FormPills form={row.form} t={t} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ClubAvatar({ shortName }) {
   return (
     <span
@@ -256,22 +288,28 @@ function ClubSelect({ label, value, onChange, teams, otherValue, t }) {
   );
 }
 
-// Top N players for one club, sorted by season total points — a proxy for
-// "who's actually likely to start and matter" without needing a real lineup
-// prediction. Used to give the accordion something concrete to analyze
-// (price/form/ownership/underlying), not just a name list.
-function topPlayersForClub(players, teamId, limit = 5) {
-  return players
-    .filter((p) => p.teamId === teamId)
-    .sort((a, b) => b.totalPoints - a.totalPoints)
-    .slice(0, limit);
+// Top N players for one club. Sorted by season total points by default (a
+// proxy for "who's actually likely to start and matter" without needing a
+// real lineup prediction); the 'goals' metric instead ranks by goals+assists
+// so the same list can answer "who's actually been scoring for this club",
+// which total points alone can hide (a high-point defender vs. a
+// goal-poor-but-creative forward look identical under the points sort).
+function topPlayersForClub(players, teamId, metric = 'points', limit = 5) {
+  const list = players.filter((p) => p.teamId === teamId);
+  if (metric === 'goals') {
+    return list.sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists) || b.goals - a.goals).slice(0, limit);
+  }
+  return list.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, limit);
 }
 
 // One reference row inside the accordion — the same core columns as the
 // Players table (price/form/pts/ownership) so the numbers mean the same
 // thing a user already knows from there, plus the two flags that matter
-// most for THIS specific match: fitness doubt and set-piece duty.
-function PlayerRefRow({ p, t }) {
+// most for THIS specific match: fitness doubt and set-piece duty. The
+// 'goals' metric swaps form+points for goals+assists (rather than adding two
+// more columns on top) since both views are trying to answer a different
+// question, not layer more numbers into the same one.
+function PlayerRefRow({ p, metric, t }) {
   return (
     <div className="flex items-center gap-2 text-xs py-1 border-b border-line last:border-b-0">
       <span className={`pos pos-${p.positionId}`}>{p.position}</span>
@@ -289,8 +327,17 @@ function PlayerRefRow({ p, t }) {
         </Tooltip>
       )}
       <span className="text-muted w-12 text-right shrink-0">£{p.price.toFixed(1)}m</span>
-      <span className="text-muted w-10 text-right shrink-0">{t('table.form')} {p.form.toFixed(1)}</span>
-      <span className="font-bold w-8 text-right shrink-0">{p.totalPoints}</span>
+      {metric === 'goals' ? (
+        <>
+          <span className="text-muted w-16 text-right shrink-0 whitespace-nowrap">{t('rivalry.goals')} {p.goals}</span>
+          <span className="text-muted w-16 text-right shrink-0 whitespace-nowrap">{t('rivalry.assists')} {p.assists}</span>
+        </>
+      ) : (
+        <>
+          <span className="text-muted w-10 text-right shrink-0">{t('table.form')} {p.form.toFixed(1)}</span>
+          <span className="font-bold w-8 text-right shrink-0">{p.totalPoints}</span>
+        </>
+      )}
       <span className="text-muted w-12 text-right shrink-0">{p.ownership.toFixed(1)}%</span>
     </div>
   );
@@ -300,36 +347,54 @@ function PlayerRefRow({ p, t }) {
 // deciding a transfer/captain call around this fixture has the actual
 // numbers (price, form, total points, ownership, fitness, set-piece order)
 // to analyze rather than just the scoreline.
-function ClubPlayersPanel({ home, away, homePlayers, awayPlayers, t }) {
+function ClubPlayersPanel({ home, away, homePlayers, awayPlayers, metric, onMetricChange, t }) {
   return (
-    <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1 pt-3 mt-3 border-t border-line">
-      {[
-        { side: 'home', club: home, list: homePlayers },
-        { side: 'away', club: away, list: awayPlayers },
-      ].map(({ side, club, list }) => (
-        <div key={side}>
-          <div className="flex items-center gap-2 mb-1.5">
-            <ClubAvatar shortName={club?.shortName ?? '?'} />
-            <span className="font-display text-sm font-bold">{club?.name ?? '?'}</span>
+    <div className="pt-3 mt-3 border-t border-line">
+      <div className="inline-flex gap-1 bg-panel-2 border border-line rounded-full p-[3px] mb-3">
+        <button
+          type="button"
+          onClick={() => onMetricChange('points')}
+          className={`font-display text-[11px] font-bold tracking-[0.02em] uppercase px-3 py-1 rounded-full cursor-pointer transition ${metric === 'points' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+        >
+          {t('rivalry.topByPoints')}
+        </button>
+        <button
+          type="button"
+          onClick={() => onMetricChange('goals')}
+          className={`font-display text-[11px] font-bold tracking-[0.02em] uppercase px-3 py-1 rounded-full cursor-pointer transition ${metric === 'goals' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+        >
+          {t('rivalry.topScorers')}
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
+        {[
+          { side: 'home', club: home, list: homePlayers },
+          { side: 'away', club: away, list: awayPlayers },
+        ].map(({ side, club, list }) => (
+          <div key={side}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <ClubAvatar shortName={club?.shortName ?? '?'} />
+              <span className="font-display text-sm font-bold">{club?.name ?? '?'}</span>
+            </div>
+            {list.length === 0 ? (
+              <div className="text-muted text-xs">{t('fdr.none')}</div>
+            ) : (
+              list.map((p) => <PlayerRefRow key={p.id} p={p} metric={metric} t={t} />)
+            )}
           </div>
-          {list.length === 0 ? (
-            <div className="text-muted text-xs">{t('fdr.none')}</div>
-          ) : (
-            list.map((p) => <PlayerRefRow key={p.id} p={p} t={t} />)
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
-function MeetingCard({ meeting, teamById, idA, players, expanded, onToggle, t }) {
+function MeetingCard({ meeting, teamById, idA, players, expanded, onToggle, metric, onMetricChange, t }) {
   const home = teamById.get(meeting.homeTeamId);
   const away = teamById.get(meeting.awayTeamId);
   const matchday = isMatchday(meeting.kickoffTime) && !meeting.done;
   const homeIsA = meeting.homeTeamId === idA;
-  const homePlayers = players ? topPlayersForClub(players, meeting.homeTeamId) : [];
-  const awayPlayers = players ? topPlayersForClub(players, meeting.awayTeamId) : [];
+  const homePlayers = players ? topPlayersForClub(players, meeting.homeTeamId, metric) : [];
+  const awayPlayers = players ? topPlayersForClub(players, meeting.awayTeamId, metric) : [];
   return (
     <div className={`bg-panel border border-line rounded-md p-3.5 shadow-sm${matchday ? ' matchday' : ''}`}>
       <button
@@ -363,7 +428,17 @@ function MeetingCard({ meeting, teamById, idA, players, expanded, onToggle, t })
           <span className={`text-muted text-xs transition-transform ${expanded ? 'rotate-180' : ''}`}>▾</span>
         </div>
       </button>
-      {expanded && <ClubPlayersPanel home={home} away={away} homePlayers={homePlayers} awayPlayers={awayPlayers} t={t} />}
+      {expanded && (
+        <ClubPlayersPanel
+          home={home}
+          away={away}
+          homePlayers={homePlayers}
+          awayPlayers={awayPlayers}
+          metric={metric}
+          onMetricChange={onMetricChange}
+          t={t}
+        />
+      )}
     </div>
   );
 }
@@ -385,6 +460,10 @@ function ClubH2H({ t }) {
   // reorders. Starts closed; player reference data is only worth the extra
   // screen space once a user asks for it.
   const [expandedId, setExpandedId] = useState(null);
+  // Shared across every open accordion rather than per-card state — a user
+  // comparing "who's actually scoring" wants that lens applied consistently
+  // if they check more than one leg, not reset back to points each time.
+  const [metric, setMetric] = useState('points');
 
   useEffect(() => {
     let alive = true;
@@ -410,6 +489,7 @@ function ClubH2H({ t }) {
   const bothPicked = idA != null && idB != null && idA !== idB;
   const meetings = bothPicked ? clubMeetings(fixtures, idA, idB) : [];
   const record = bothPicked ? seriesRecord(meetings, idA) : null;
+  const standings = bothPicked ? computeStandings(teams, fixtures) : null;
 
   return (
     <div>
@@ -419,6 +499,10 @@ function ClubH2H({ t }) {
       </div>
 
       {!bothPicked && <div className="py-10 text-center text-muted">{t('rivalry.pickBothClubs')}</div>}
+
+      {bothPicked && standings && (
+        <ClubFormStrip standings={standings} teamA={teamById.get(idA)} teamB={teamById.get(idB)} t={t} />
+      )}
 
       {bothPicked && record && (
         <div className="bg-panel border border-line rounded-md p-4 mb-3.5 shadow-sm text-center">
@@ -447,6 +531,8 @@ function ClubH2H({ t }) {
               players={players}
               expanded={expandedId === m.id}
               onToggle={() => setExpandedId((cur) => (cur === m.id ? null : m.id))}
+              metric={metric}
+              onMetricChange={setMetric}
               t={t}
             />
           ))}

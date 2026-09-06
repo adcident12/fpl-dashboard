@@ -14,7 +14,7 @@ import { useLang } from './i18n.jsx';
 // finished_provisional quirk as buildFixtureGrid()'s `done`, since a fully-
 // played match can sit at finished=false for up to ~1h while FPL's own
 // confirmation catches up.
-function computeStandings(teams, fixtures) {
+export function computeStandings(teams, fixtures) {
   const stats = new Map(
     teams.map((tm) => [tm.id, { id: tm.id, name: tm.name, shortName: tm.shortName, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, form: [] }])
   );
@@ -113,7 +113,7 @@ function zoneAccent(rank, total) {
 const FORM_CLASS = { W: 'bg-easy', D: 'bg-panel-3 border border-line', L: 'bg-hard' };
 const FORM_TEXT = { W: 'text-white', D: 'text-muted', L: 'text-white' };
 
-function FormPills({ form, t }) {
+export function FormPills({ form, t }) {
   if (form.length === 0) return <span className="text-muted text-xs">—</span>;
   return (
     <span className="inline-flex gap-1">

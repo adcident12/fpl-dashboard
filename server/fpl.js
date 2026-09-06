@@ -125,6 +125,12 @@ export async function buildData() {
       // not weighted into scoring for the same reason penalties aren't.
       freeKickOrder: el.direct_freekicks_order,
       cornerOrder: el.corners_and_indirect_freekicks_order,
+      // Season totals, not per-90 — used as-is for "top scorer/assister" style
+      // views (Club H2H) where the raw tally is what a fan actually means by
+      // that phrase, distinct from xG/xA above which model the underlying
+      // chance quality rather than what actually went in.
+      goals: el.goals_scored,
+      assists: el.assists,
       status: el.status,
       news: el.news,
       transfersIn: el.transfers_in,
