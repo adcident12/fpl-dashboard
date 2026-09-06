@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchSquad, fetchTeams, fetchFixturesRaw } from './api.js';
+import { fetchSquad, fetchTeams, fetchFixturesRaw, fetchPlayers } from './api.js';
 import { useTeamId } from './useTeamId.js';
 import { TeamIdInput } from './TeamIdControls.jsx';
 import PitchView, { teamColor } from './PitchView.jsx';
@@ -256,36 +256,114 @@ function ClubSelect({ label, value, onChange, teams, otherValue, t }) {
   );
 }
 
-function MeetingCard({ meeting, teamById, idA, t }) {
+// Top N players for one club, sorted by season total points — a proxy for
+// "who's actually likely to start and matter" without needing a real lineup
+// prediction. Used to give the accordion something concrete to analyze
+// (price/form/ownership/underlying), not just a name list.
+function topPlayersForClub(players, teamId, limit = 5) {
+  return players
+    .filter((p) => p.teamId === teamId)
+    .sort((a, b) => b.totalPoints - a.totalPoints)
+    .slice(0, limit);
+}
+
+// One reference row inside the accordion — the same core columns as the
+// Players table (price/form/pts/ownership) so the numbers mean the same
+// thing a user already knows from there, plus the two flags that matter
+// most for THIS specific match: fitness doubt and set-piece duty.
+function PlayerRefRow({ p, t }) {
+  return (
+    <div className="flex items-center gap-2 text-xs py-1 border-b border-line last:border-b-0">
+      <span className={`pos pos-${p.positionId}`}>{p.position}</span>
+      <span className="flex-1 min-w-0 truncate">
+        {p.name}
+        {p.status !== 'a' && (
+          <Tooltip content={p.news || p.status}>
+            <span className="news"> ⚑</span>
+          </Tooltip>
+        )}
+      </span>
+      {p.penaltyOrder === 1 && (
+        <Tooltip content={t('sug.penaltyTakerTitle')}>
+          <span className="badge event-flag penalty">{t('sug.penaltyTakerBadge')}</span>
+        </Tooltip>
+      )}
+      <span className="text-muted w-12 text-right shrink-0">£{p.price.toFixed(1)}m</span>
+      <span className="text-muted w-10 text-right shrink-0">{t('table.form')} {p.form.toFixed(1)}</span>
+      <span className="font-bold w-8 text-right shrink-0">{p.totalPoints}</span>
+      <span className="text-muted w-12 text-right shrink-0">{p.ownership.toFixed(1)}%</span>
+    </div>
+  );
+}
+
+// Accordion body — top players from each club, side by side, so a user
+// deciding a transfer/captain call around this fixture has the actual
+// numbers (price, form, total points, ownership, fitness, set-piece order)
+// to analyze rather than just the scoreline.
+function ClubPlayersPanel({ home, away, homePlayers, awayPlayers, t }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1 pt-3 mt-3 border-t border-line">
+      {[
+        { side: 'home', club: home, list: homePlayers },
+        { side: 'away', club: away, list: awayPlayers },
+      ].map(({ side, club, list }) => (
+        <div key={side}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <ClubAvatar shortName={club?.shortName ?? '?'} />
+            <span className="font-display text-sm font-bold">{club?.name ?? '?'}</span>
+          </div>
+          {list.length === 0 ? (
+            <div className="text-muted text-xs">{t('fdr.none')}</div>
+          ) : (
+            list.map((p) => <PlayerRefRow key={p.id} p={p} t={t} />)
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MeetingCard({ meeting, teamById, idA, players, expanded, onToggle, t }) {
   const home = teamById.get(meeting.homeTeamId);
   const away = teamById.get(meeting.awayTeamId);
   const matchday = isMatchday(meeting.kickoffTime) && !meeting.done;
   const homeIsA = meeting.homeTeamId === idA;
+  const homePlayers = players ? topPlayersForClub(players, meeting.homeTeamId) : [];
+  const awayPlayers = players ? topPlayersForClub(players, meeting.awayTeamId) : [];
   return (
-    <div className={`bg-panel border border-line rounded-md p-3.5 shadow-sm flex items-center gap-3 flex-wrap${matchday ? ' matchday' : ''}`}>
-      <span className="font-display text-xs font-bold text-muted w-14 shrink-0">GW{meeting.event}</span>
-      <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-        <ClubAvatar shortName={home?.shortName ?? '?'} />
-        <span className={`text-sm ${homeIsA ? 'font-bold' : ''}`}>{home?.name ?? '?'}</span>
-        {meeting.done && meeting.homeScore != null ? (
-          <span className="font-display text-lg font-bold px-2">{meeting.homeScore}–{meeting.awayScore}</span>
-        ) : (
-          <span className="text-muted text-xs px-2">{t('rivalry.vs')}</span>
-        )}
-        <span className={`text-sm ${!homeIsA ? 'font-bold' : ''}`}>{away?.name ?? '?'}</span>
-        <ClubAvatar shortName={away?.shortName ?? '?'} />
-      </div>
-      <div className="text-xs text-muted shrink-0">
-        {meeting.done ? t('rivalry.final') : formatKickoff(meeting.kickoffTime, t)}
-      </div>
-      <div className="flex gap-1 shrink-0">
-        <Tooltip content={t('rivalry.fdrForTitle', { team: home?.shortName ?? '?' })}>
-          <span className={`fdr-badge fdr-${fdrBucket(meeting.homeDifficulty)}`}>{meeting.homeDifficulty}</span>
-        </Tooltip>
-        <Tooltip content={t('rivalry.fdrForTitle', { team: away?.shortName ?? '?' })}>
-          <span className={`fdr-badge fdr-${fdrBucket(meeting.awayDifficulty)}`}>{meeting.awayDifficulty}</span>
-        </Tooltip>
-      </div>
+    <div className={`bg-panel border border-line rounded-md p-3.5 shadow-sm${matchday ? ' matchday' : ''}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="w-full flex items-center gap-3 flex-wrap cursor-pointer text-left bg-transparent"
+      >
+        <span className="font-display text-xs font-bold text-muted w-14 shrink-0">GW{meeting.event}</span>
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <ClubAvatar shortName={home?.shortName ?? '?'} />
+          <span className={`text-sm ${homeIsA ? 'font-bold' : ''}`}>{home?.name ?? '?'}</span>
+          {meeting.done && meeting.homeScore != null ? (
+            <span className="font-display text-lg font-bold px-2">{meeting.homeScore}–{meeting.awayScore}</span>
+          ) : (
+            <span className="text-muted text-xs px-2">{t('rivalry.vs')}</span>
+          )}
+          <span className={`text-sm ${!homeIsA ? 'font-bold' : ''}`}>{away?.name ?? '?'}</span>
+          <ClubAvatar shortName={away?.shortName ?? '?'} />
+        </div>
+        <div className="text-xs text-muted shrink-0">
+          {meeting.done ? t('rivalry.final') : formatKickoff(meeting.kickoffTime, t)}
+        </div>
+        <div className="flex gap-1 shrink-0 items-center">
+          <Tooltip content={t('rivalry.fdrForTitle', { team: home?.shortName ?? '?' })}>
+            <span className={`fdr-badge fdr-${fdrBucket(meeting.homeDifficulty)}`}>{meeting.homeDifficulty}</span>
+          </Tooltip>
+          <Tooltip content={t('rivalry.fdrForTitle', { team: away?.shortName ?? '?' })}>
+            <span className={`fdr-badge fdr-${fdrBucket(meeting.awayDifficulty)}`}>{meeting.awayDifficulty}</span>
+          </Tooltip>
+          <span className={`text-muted text-xs transition-transform ${expanded ? 'rotate-180' : ''}`}>▾</span>
+        </div>
+      </button>
+      {expanded && <ClubPlayersPanel home={home} away={away} homePlayers={homePlayers} awayPlayers={awayPlayers} t={t} />}
     </div>
   );
 }
@@ -298,17 +376,24 @@ function MeetingCard({ meeting, teamById, idA, t }) {
 function ClubH2H({ t }) {
   const [teams, setTeams] = useState(null);
   const [fixtures, setFixtures] = useState(null);
+  const [players, setPlayers] = useState(null);
   const [error, setError] = useState(null);
   const [clubA, setClubA] = useState('');
   const [clubB, setClubB] = useState('');
+  // Which meeting card's accordion is open — at most one at a time, keyed by
+  // fixture id (not an index), so it doesn't shift if the meetings list ever
+  // reorders. Starts closed; player reference data is only worth the extra
+  // screen space once a user asks for it.
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([fetchTeams(), fetchFixturesRaw()])
-      .then(([teamsRes, fixturesRes]) => {
+    Promise.all([fetchTeams(), fetchFixturesRaw(), fetchPlayers()])
+      .then(([teamsRes, fixturesRes, playersRes]) => {
         if (!alive) return;
         setTeams(teamsRes.teams);
         setFixtures(fixturesRes);
+        setPlayers(playersRes.players);
       })
       .catch((e) => alive && setError(e.message));
     return () => {
@@ -317,7 +402,7 @@ function ClubH2H({ t }) {
   }, []);
 
   if (error) return <div className="py-10 text-center text-[#ff8a80]">{t('status.error', { message: error })}</div>;
-  if (!teams || !fixtures) return <LoadingState label={t('status.loading')} />;
+  if (!teams || !fixtures || !players) return <LoadingState label={t('status.loading')} />;
 
   const teamById = new Map(teams.map((tm) => [tm.id, tm]));
   const idA = clubA ? Number(clubA) : null;
@@ -354,7 +439,16 @@ function ClubH2H({ t }) {
       {bothPicked && meetings.length > 0 && (
         <div className="flex flex-col gap-2.5">
           {meetings.map((m) => (
-            <MeetingCard key={m.id} meeting={m} teamById={teamById} idA={idA} t={t} />
+            <MeetingCard
+              key={m.id}
+              meeting={m}
+              teamById={teamById}
+              idA={idA}
+              players={players}
+              expanded={expandedId === m.id}
+              onToggle={() => setExpandedId((cur) => (cur === m.id ? null : m.id))}
+              t={t}
+            />
           ))}
         </div>
       )}
