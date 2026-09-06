@@ -20,17 +20,37 @@ import { useLang } from './i18n.jsx';
 const FDR_BG = { 1: '#1b5e20', 2: '#558b2f', 3: '#f9a825', 4: '#ef6c00', 5: '#b71c1c' };
 const FDR_LABEL_KEY = { 1: 'fixtures.fdr1', 2: 'fixtures.fdr2', 3: 'fixtures.fdr3', 4: 'fixtures.fdr4', 5: 'fixtures.fdr5' };
 
+// True when kickoffTime falls on today's date in the viewer's own local
+// timezone (matching how formatKickoff already displays it) — compared by
+// calendar date, not a 24h window, so a fixture stays "today" all day
+// regardless of what time it kicks off. A finished match doesn't need the
+// attention-grabbing treatment anymore (nothing left to watch for), so
+// callers also check `!f.done` before applying it.
+function isMatchday(kickoffTime) {
+  if (!kickoffTime) return false;
+  const kickoff = new Date(kickoffTime);
+  const now = new Date();
+  return (
+    kickoff.getFullYear() === now.getFullYear() &&
+    kickoff.getMonth() === now.getMonth() &&
+    kickoff.getDate() === now.getDate()
+  );
+}
+
 // A cell now holds an ARRAY of fixtures (0 = blank gameweek, 1 = normal,
 // 2+ = double gameweek) — see buildFixtureGrid() in server/fpl.js.
 function FixtureRow({ f, t }) {
   const bg = FDR_BG[f.difficulty] ?? '#37474f';
   const dark = f.difficulty >= 4;
   const side = f.home ? t('fixtures.home') : t('fixtures.away');
-  const title = `vs ${f.opponentName} (${side}) — ${formatKickoff(f.kickoffTime, t)} — FDR ${f.difficulty}/5`;
+  const matchday = isMatchday(f.kickoffTime) && !f.done;
+  const title = matchday
+    ? `${t('fixtures.today')} — vs ${f.opponentName} (${side}) — ${formatKickoff(f.kickoffTime, t)} — FDR ${f.difficulty}/5`
+    : `vs ${f.opponentName} (${side}) — ${formatKickoff(f.kickoffTime, t)} — FDR ${f.difficulty}/5`;
   return (
     <Tooltip as="div" content={title}>
       <div
-        className={`cell fdr-${f.difficulty}${f.done ? ' done' : ''}`}
+        className={`cell fdr-${f.difficulty}${f.done ? ' done' : ''}${matchday ? ' matchday' : ''}`}
         style={{ background: bg, color: dark ? '#fff' : '#111' }}
       >
         <span className="cell-opp">
