@@ -13,6 +13,7 @@ import {
   buildSquadScan,
   buildChipPlan,
   buildBonusPredictor,
+  buildDreamTeam,
   getFixtures,
   getElementSummary,
   getEntryPicks,
@@ -164,6 +165,18 @@ app.get('/api/bonus-predictor', async (req, res) => {
   try {
     const eventId = req.query.eventId ? Number(req.query.eventId) : null;
     res.json(await buildBonusPredictor(eventId));
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+// Dream Team of the gameweek — FPL's own official Team of the Week, read
+// directly from event/{gw}/live/'s in_dreamteam flag. League-wide, no team
+// needed. ?eventId= optional (defaults to the current gameweek).
+app.get('/api/dream-team', async (req, res) => {
+  try {
+    const eventId = req.query.eventId ? Number(req.query.eventId) : null;
+    res.json(await buildDreamTeam(eventId));
   } catch (e) {
     res.status(502).json({ error: e.message });
   }

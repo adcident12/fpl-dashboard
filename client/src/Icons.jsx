@@ -75,6 +75,14 @@ export function SetPiecesIcon(props) {
   );
 }
 
+export function DreamTeamIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m12 3 2.5 5.2 5.7.8-4.1 4 1 5.7L12 16l-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 3Z" />
+    </svg>
+  );
+}
+
 export function GuideIcon(props) {
   return (
     <svg {...base} {...props}>

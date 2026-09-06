@@ -15,6 +15,7 @@ const STRINGS = {
     'nav.bonus': 'Live Bonus',
     'nav.rivalry': 'Rivalry',
     'nav.setpieces': 'Set Pieces',
+    'nav.dreamTeam': 'Dream Team',
     'nav.guide': 'Guide',
     'meta.eventPlayers': '{{event}} · {{count}} players',
     'meta.updated': 'Updated {{time}}',
@@ -213,6 +214,12 @@ const STRINGS = {
     'setpieces.corners': 'Corners',
     'setpieces.none': '—',
 
+    'dreamTeam.loading': 'Loading Dream Team…',
+    'dreamTeam.title': 'Dream Team — Gameweek {{event}}',
+    'dreamTeam.note': "FPL's own official Team of the Week for this gameweek (its `in_dreamteam` flag) — not a self-computed best XI, straight from the source.",
+    'dreamTeam.totalPoints': 'combined points',
+    'dreamTeam.rankingTitle': 'Ranked by points',
+
     'lang.toggle': 'ไทย',
   },
   th: {
@@ -225,6 +232,7 @@ const STRINGS = {
     'nav.bonus': 'โบนัสสด',
     'nav.rivalry': 'ศึกคู่แข่ง',
     'nav.setpieces': 'ลูกตั้งเตะ',
+    'nav.dreamTeam': 'ทีมยอดเยี่ยม',
     'nav.guide': 'คู่มือ',
     'meta.eventPlayers': '{{event}} · นักเตะ {{count}} คน',
     'meta.updated': 'อัปเดตล่าสุด {{time}}',
@@ -422,6 +430,12 @@ const STRINGS = {
     'setpieces.freeKicks': 'ฟรีคิก',
     'setpieces.corners': 'คอร์เนอร์',
     'setpieces.none': '—',
+
+    'dreamTeam.loading': 'กำลังโหลดทีมยอดเยี่ยม…',
+    'dreamTeam.title': 'ทีมยอดเยี่ยม — Gameweek {{event}}',
+    'dreamTeam.note': 'ทีมยอดเยี่ยมประจำสัปดาห์อย่างเป็นทางการของ FPL เอง (จาก flag `in_dreamteam`) ไม่ใช่การคำนวณ 11 ตัวจริงที่ดีที่สุดเอง แต่มาจากแหล่งข้อมูลโดยตรง',
+    'dreamTeam.totalPoints': 'แต้มรวม',
+    'dreamTeam.rankingTitle': 'จัดอันดับตามแต้ม',
 
     'lang.toggle': 'EN',
   },

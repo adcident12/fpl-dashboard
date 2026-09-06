@@ -83,3 +83,15 @@ export async function fetchBonusPredictor(eventId) {
   }
   return res.json();
 }
+
+export async function fetchDreamTeam(eventId) {
+  const params = new URLSearchParams();
+  if (eventId) params.set('eventId', String(eventId));
+  const qs = params.toString();
+  const res = await fetch(`${API}/dream-team${qs ? `?${qs}` : ''}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to load dream team (${res.status})`);
+  }
+  return res.json();
+}

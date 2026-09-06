@@ -7,12 +7,13 @@ import ChipsView from './ChipsView.jsx';
 import BonusView from './BonusView.jsx';
 import RivalryView from './RivalryView.jsx';
 import SetPiecesView from './SetPiecesView.jsx';
+import DreamTeamView from './DreamTeamView.jsx';
 import GuideView from './GuideView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
-import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, BonusIcon, RivalryIcon, SetPiecesIcon, GuideIcon } from './Icons.jsx';
+import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, BonusIcon, RivalryIcon, SetPiecesIcon, DreamTeamIcon, GuideIcon } from './Icons.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -52,6 +53,7 @@ const TAB_VIEWS = {
   bonus: <BonusView />,
   rivalry: <RivalryView />,
   setpieces: <SetPiecesView />,
+  dreamteam: <DreamTeamView />,
   guide: <GuideView />,
 };
 
@@ -64,6 +66,7 @@ const TABS = [
   { key: 'bonus', labelKey: 'nav.bonus', Icon: BonusIcon },
   { key: 'rivalry', labelKey: 'nav.rivalry', Icon: RivalryIcon },
   { key: 'setpieces', labelKey: 'nav.setpieces', Icon: SetPiecesIcon },
+  { key: 'dreamteam', labelKey: 'nav.dreamTeam', Icon: DreamTeamIcon },
   { key: 'guide', labelKey: 'nav.guide', Icon: GuideIcon },
 ];
 
@@ -173,16 +176,20 @@ export default function App() {
           {t('app.title')}
         </h1>
         {/* Primary nav lives here on tablet/desktop; on mobile it's the fixed
-            bottom tab bar below instead (this row has no width limit of its
-            own, so on a narrow screen 6 tab buttons forced the whole page
-            wider than the viewport rather than wrapping — a real bug found
-            once this could actually be viewed on a phone). */}
-        <nav className="hidden sm:inline-flex gap-1 bg-panel border border-line rounded-lg p-[3px] shadow-sm">
+            bottom tab bar below instead. This row used to have no width limit
+            of its own AND no flex-wrap, so it either grew the whole page
+            wider than the viewport (found on a phone, before the mobile bar
+            existed) or, once the tab count grew to 9, squeezed each button
+            narrower than its label instead of overflowing (found on a
+            tablet-width screen) — flex-wrap lets the pill group wrap onto a
+            second line instead of either failure mode, and whitespace-nowrap
+            keeps each button's own label on one line while it does. */}
+        <nav className="hidden sm:inline-flex flex-wrap gap-1 bg-panel border border-line rounded-lg p-[3px] shadow-sm">
           {TABS.map((tb) => (
             <button
               key={tb.key}
               type="button"
-              className={`font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-md cursor-pointer transition ${tab === tb.key ? 'bg-accent text-white shadow-sm' : 'bg-transparent text-muted hover:text-text hover:bg-panel-2'}`}
+              className={`whitespace-nowrap font-display text-[13px] font-bold tracking-[0.02em] uppercase px-3.5 py-1.5 rounded-md cursor-pointer transition ${tab === tb.key ? 'bg-accent text-white shadow-sm' : 'bg-transparent text-muted hover:text-text hover:bg-panel-2'}`}
               onClick={() => setTab(tb.key)}
             >
               {t(tb.labelKey)}

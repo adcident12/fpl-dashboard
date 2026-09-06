@@ -206,6 +206,20 @@ const bonusFixture = {
   },
 };
 
+const dreamTeamPlayer = {
+  type: 'object',
+  properties: {
+    id: { type: 'integer' }, name: { type: 'string' }, teamShort: { type: 'string' },
+    positionId: { type: 'integer' }, position: { type: 'string' }, price: { type: 'number' },
+    status: { type: 'string' }, news: { type: 'string' },
+    points: { type: 'integer', description: 'Points scored this gameweek.' },
+    starting: { type: 'boolean', description: 'Always true — Dream Team has no bench concept, this field only exists so the shape matches /squad for reuse with PitchView.' },
+    slot: { type: 'integer', description: '1-11, GK/DEF/MID/FWD order.' },
+    isCaptain: { type: 'boolean', description: 'Always false — Dream Team has no captain concept.' },
+    isViceCaptain: { type: 'boolean' },
+  },
+};
+
 const errorResponses = {
   400: { description: 'Missing a required query parameter.', content: { 'application/json': { schema: errorResponse } } },
   404: { description: 'The team/gameweek doesn\'t exist in FPL (e.g. a gameweek before the team was created).', content: { 'application/json': { schema: errorResponse } } },
@@ -446,6 +460,21 @@ export const openapiSpec = {
         parameters: [{ ...eventIdParam, description: 'Gameweek ID. Defaults to the current gameweek.' }],
         responses: {
           200: { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { eventId: { type: 'integer' }, fixtures: { type: 'array', items: bonusFixture } } } } } },
+          502: errorResponses[502],
+        },
+      },
+    },
+    '/dream-team': {
+      get: {
+        operationId: 'getDreamTeam', tags: ['Live'],
+        summary: "The gameweek's official Dream Team (FPL's own Team of the Week)",
+        description:
+          "Reads FPL's own `in_dreamteam` flag from event/{gw}/live/ directly — not a self-computed best-XI optimization. " +
+          'Always exactly 11 players. League-wide — no team ID needed. Shaped like /squad\'s squad array (starting/slot fields) ' +
+          'so the client can reuse PitchView to render it, even though there\'s no bench or captain here.',
+        parameters: [{ ...eventIdParam, description: 'Gameweek ID. Defaults to the current gameweek.' }],
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { eventId: { type: 'integer' }, totalPoints: { type: 'integer' }, dreamTeam: { type: 'array', items: dreamTeamPlayer } } } } } },
           502: errorResponses[502],
         },
       },

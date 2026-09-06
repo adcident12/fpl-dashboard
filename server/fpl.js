@@ -977,3 +977,47 @@ export async function buildBonusPredictor(eventId) {
 
   return { eventId: ev, fixtures: fixturesOut };
 }
+
+/**
+ * Fan feature — Dream Team of the Gameweek. FPL computes its own official
+ * Team of the Week and exposes it directly as `stats.in_dreamteam` on
+ * `event/{gw}/live/`'s elements — no need to self-compute a best-XI
+ * combinatorial optimization (formation constraints, budget, etc.) the way
+ * the transfer/captain scoring engine does; this is simply a filter + join.
+ * Always exactly 11 players (verified against real gameweek data). Reuses
+ * `PitchView.jsx` client-side by shaping each player like a squad pick
+ * (`starting: true`, a 1-11 `slot`) even though there's no bench concept here.
+ */
+export async function buildDreamTeam(eventId) {
+  const bootstrap = await getBootstrap();
+  const currentEvent = bootstrap.events.find((e) => e.is_current);
+  const ev = eventId ?? currentEvent?.id ?? 1;
+  const live = await getEventLive(ev);
+
+  const teams = new Map(bootstrap.teams.map((t) => [t.id, t]));
+  const elementsById = new Map(bootstrap.elements.map((el) => [el.id, el]));
+
+  const dreamTeam = (live.elements ?? [])
+    .filter((e) => e.stats.in_dreamteam)
+    .map((e) => {
+      const el = elementsById.get(e.id);
+      const team = el ? teams.get(el.team) : null;
+      return {
+        id: e.id,
+        name: el?.web_name ?? `Player ${e.id}`,
+        teamShort: team?.short_name ?? '?',
+        positionId: el?.element_type ?? null,
+        position: POSITION_MAP[el?.element_type] ?? '?',
+        price: el ? el.now_cost / 10 : 0,
+        status: el?.status ?? 'a',
+        news: el?.news ?? '',
+        points: e.stats.total_points,
+      };
+    })
+    .sort((a, b) => (a.positionId ?? 9) - (b.positionId ?? 9))
+    .map((p, i) => ({ ...p, starting: true, slot: i + 1, isCaptain: false, isViceCaptain: false }));
+
+  const totalPoints = dreamTeam.reduce((s, p) => s + p.points, 0);
+
+  return { eventId: ev, totalPoints, dreamTeam };
+}
