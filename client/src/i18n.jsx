@@ -79,7 +79,8 @@ const STRINGS = {
     'fixtures.blanksBanner': 'Blank Gameweek: {{teams}} have no fixture in {{gw}}',
     'fixtures.swingTitle': 'Fixture Swing',
     'fixtures.swingNote': 'Teams ranked by average fixture difficulty over the gameweeks shown below — easiest run first. Handy for planning transfers/captaincy a few weeks ahead.',
-    'fixtures.swingAvgFdr': 'Avg FDR',
+    'fixtures.swingEasiest': 'Easiest first',
+    'fixtures.swingHardest': 'Hardest first',
 
     'fdr.easy': 'Easy',
     'fdr.med': 'Med',
@@ -297,7 +298,8 @@ const STRINGS = {
     'fixtures.blanksBanner': 'Blank Gameweek: {{teams}} ไม่มีนัดใน {{gw}}',
     'fixtures.swingTitle': 'ตารางแข่งง่าย-ยาก',
     'fixtures.swingNote': 'จัดอันดับทีมตามความยากง่ายเฉลี่ยของโปรแกรมแข่งในช่วง gameweek ที่แสดงด้านล่าง — ทีมที่มีโปรแกรมง่ายที่สุดอยู่บนสุด ใช้วางแผนเปลี่ยนตัว/เลือกกัปตันล่วงหน้าได้',
-    'fixtures.swingAvgFdr': 'FDR เฉลี่ย',
+    'fixtures.swingEasiest': 'ง่ายสุดก่อน',
+    'fixtures.swingHardest': 'ยากสุดก่อน',
 
     'fdr.easy': 'ง่าย',
     'fdr.med': 'กลาง',

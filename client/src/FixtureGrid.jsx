@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { fetchFixtureGrid } from './api.js';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
-import FdrBadges from './FdrBadges.jsx';
+import FdrBadges, { fdrBucket } from './FdrBadges.jsx';
+import { teamColor } from './PitchView.jsx';
 import { useLang } from './i18n.jsx';
 
 // Cells use Tooltip's as="div" (not the default "span") — .cell is a
@@ -104,15 +105,18 @@ function DgwBgwBanner({ data, t }) {
 // client-side from the grid's own data (no new server endpoint): flattens
 // each team's per-gameweek fixture arrays (0+ each, so a Blank Gameweek just
 // contributes nothing to the average rather than skewing it, and a Double
-// Gameweek's two legs both count individually).
+// Gameweek's two legs both count individually). `rank` is fixed at the
+// canonical easiest-first order regardless of the display toggle below, so
+// the top/bottom-3 accent coloring never moves when the list is reversed.
 function computeFixtureSwing(data) {
   return data.teams
     .map((team) => {
       const flat = team.fixtures.flat();
       const avgFDR = flat.length ? flat.reduce((s, f) => s + f.difficulty, 0) / flat.length : null;
-      return { id: team.id, name: team.name, avgFDR, fixtures: flat };
+      return { id: team.id, name: team.name, shortName: team.shortName, avgFDR, fixtures: flat };
     })
-    .sort((a, b) => (a.avgFDR ?? 99) - (b.avgFDR ?? 99));
+    .sort((a, b) => (a.avgFDR ?? 99) - (b.avgFDR ?? 99))
+    .map((team, i) => ({ ...team, rank: i }));
 }
 
 // Top/bottom 3 get a color-coded accent border — same green/red vocabulary
@@ -124,29 +128,78 @@ function swingAccent(rank, total) {
   return 'border-l-transparent';
 }
 
+// A compact fill-bar next to the average — the same "read the run at a
+// glance without reading the number" idea real FPL fixture-ticker tools use
+// (Fantasy Football Scout / Fantasy Football Pundit both pair a numeric
+// difficulty total with a color scale). Bucketed into the same 3 tones as
+// FdrBadges (easy/med/hard) rather than a 5-stop gradient, so it reads with
+// the same vocabulary as every other FDR indicator in the app.
+function DifficultyMeter({ avgFDR }) {
+  if (avgFDR == null) return <div className="w-14 shrink-0" />;
+  const pct = Math.max(6, Math.min(100, ((5 - avgFDR) / 4) * 100));
+  const bucket = fdrBucket(Math.round(avgFDR));
+  return (
+    <div className="w-14 h-1.5 rounded-full bg-panel-3 overflow-hidden shrink-0">
+      <div className={`h-full rounded-full bg-${bucket}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+function FixtureSwingRow({ team, total, t }) {
+  return (
+    <div
+      className={`flex items-center gap-3 border-l-[3px] pl-2.5 py-1.5 rounded-sm transition-colors hover:bg-panel-2 max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:py-2 ${swingAccent(team.rank, total)}`}
+    >
+      <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+        <span className="text-muted text-xs w-5 shrink-0 text-right">{team.rank + 1}</span>
+        <span
+          className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-display font-bold text-white shrink-0"
+          style={{ background: teamColor(team.shortName) }}
+        >
+          {team.shortName}
+        </span>
+        <span className="font-display text-[13px] font-bold w-[110px] shrink-0 truncate">{team.name}</span>
+        <DifficultyMeter avgFDR={team.avgFDR} />
+        <span className="text-xs text-muted w-7 shrink-0 tabular-nums">
+          {team.avgFDR != null ? team.avgFDR.toFixed(1) : '—'}
+        </span>
+      </div>
+      <div className="max-sm:pl-8 flex-1 min-w-0 flex justify-end max-sm:justify-start">
+        <FdrBadges fixtures={team.fixtures} />
+      </div>
+    </div>
+  );
+}
+
 function FixtureSwing({ data, t }) {
+  const [sortDir, setSortDir] = useState('asc');
   const ranked = computeFixtureSwing(data);
+  const ordered = sortDir === 'asc' ? ranked : [...ranked].reverse();
   return (
     <div className="bg-panel border border-line rounded-md p-3.5 mb-3.5 shadow-sm">
-      <h3 className="m-0 mb-1 font-display text-base font-bold tracking-[0.01em]">{t('fixtures.swingTitle')}</h3>
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+        <h3 className="m-0 font-display text-base font-bold tracking-[0.01em]">{t('fixtures.swingTitle')}</h3>
+        <div className="inline-flex gap-1 bg-panel-2 border border-line rounded-full p-[3px] shrink-0">
+          <button
+            type="button"
+            onClick={() => setSortDir('asc')}
+            className={`font-display text-[11px] font-bold tracking-[0.02em] uppercase px-3 py-1 rounded-full cursor-pointer transition ${sortDir === 'asc' ? 'bg-easy text-white' : 'bg-transparent text-muted hover:text-text'}`}
+          >
+            {t('fixtures.swingEasiest')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortDir('desc')}
+            className={`font-display text-[11px] font-bold tracking-[0.02em] uppercase px-3 py-1 rounded-full cursor-pointer transition ${sortDir === 'desc' ? 'bg-hard text-white' : 'bg-transparent text-muted hover:text-text'}`}
+          >
+            {t('fixtures.swingHardest')}
+          </button>
+        </div>
+      </div>
       <div className="text-[13px] text-muted mb-3">{t('fixtures.swingNote')}</div>
       <div className="flex flex-col gap-1">
-        {ranked.map((team, i) => (
-          <div
-            key={team.id}
-            className={`flex items-center gap-3 border-l-[3px] pl-2.5 py-1.5 rounded-sm transition-colors hover:bg-panel-2 max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:py-2 ${swingAccent(i, ranked.length)}`}
-          >
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-muted text-xs w-5 shrink-0 text-right">{i + 1}</span>
-              <span className="font-display text-[13px] font-bold w-[120px] shrink-0 truncate">{team.name}</span>
-              <span className="text-xs text-muted w-16 shrink-0">
-                {t('fixtures.swingAvgFdr')} {team.avgFDR != null ? team.avgFDR.toFixed(1) : '—'}
-              </span>
-            </div>
-            <div className="max-sm:pl-8">
-              <FdrBadges fixtures={team.fixtures} />
-            </div>
-          </div>
+        {ordered.map((team) => (
+          <FixtureSwingRow key={team.id} team={team} total={ranked.length} t={t} />
         ))}
       </div>
     </div>
