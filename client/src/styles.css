@@ -804,6 +804,21 @@ table.scan .arrow-cell {
   pointer-events: none;
 }
 
+/* ---- League table zone accent (TableView.jsx) ----
+   A plain Tailwind border-l-* utility was tried first and lost the cascade
+   on mobile: the card-table treatment's `table.players tr { border: 1px
+   solid ... }` rule (further down) resets border-left too, and its compound
+   selector (table + .players + tr) out-specifies a single utility class.
+   These rules use `.table-standings` (also on the table element) + `tbody
+   tr` + the zone class for enough specificity to win everywhere, not just
+   at desktop widths where the conflict didn't happen to exist. */
+.table-standings tbody tr.zone-euro {
+  border-left: 3px solid var(--color-easy);
+}
+.table-standings tbody tr.zone-relegation {
+  border-left: 3px solid var(--color-hard);
+}
+
 /* ---- Rivalry banter card (RivalryView.jsx) ----
    One entrance animation per outcome category, not a single generic fade —
    a blowout should actually feel like one. Respects the app-wide

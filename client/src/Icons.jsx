@@ -83,6 +83,15 @@ export function DreamTeamIcon(props) {
   );
 }
 
+export function TableIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="1.5" />
+      <path d="M3.5 9.5h17M9.5 9.5v10" />
+    </svg>
+  );
+}
+
 export function GuideIcon(props) {
   return (
     <svg {...base} {...props}>

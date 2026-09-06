@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchPlayers } from './api.js';
 import FixtureGrid from './FixtureGrid.jsx';
+import TableView from './TableView.jsx';
 import SquadView from './SquadView.jsx';
 import SuggestionsView from './SuggestionsView.jsx';
 import ChipsView from './ChipsView.jsx';
@@ -13,7 +14,7 @@ import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
-import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, BonusIcon, RivalryIcon, SetPiecesIcon, DreamTeamIcon, GuideIcon } from './Icons.jsx';
+import { PlayersIcon, FixturesIcon, TableIcon, SquadIcon, SuggestionsIcon, ChipsIcon, BonusIcon, RivalryIcon, SetPiecesIcon, DreamTeamIcon, GuideIcon } from './Icons.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -47,6 +48,7 @@ function formatDeadlineCountdown(deadlineEpochMs, now, t) {
 // App's own filter/sort state directly.
 const TAB_VIEWS = {
   fixtures: <FixtureGrid />,
+  table: <TableView />,
   squad: <SquadView />,
   suggestions: <SuggestionsView />,
   chips: <ChipsView />,
@@ -60,6 +62,7 @@ const TAB_VIEWS = {
 const TABS = [
   { key: 'players', labelKey: 'nav.players', Icon: PlayersIcon },
   { key: 'fixtures', labelKey: 'nav.fixtures', Icon: FixturesIcon },
+  { key: 'table', labelKey: 'nav.table', Icon: TableIcon },
   { key: 'squad', labelKey: 'nav.squad', Icon: SquadIcon },
   { key: 'suggestions', labelKey: 'nav.suggestions', Icon: SuggestionsIcon },
   { key: 'chips', labelKey: 'nav.chips', Icon: ChipsIcon },
