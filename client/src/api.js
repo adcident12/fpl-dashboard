@@ -17,6 +17,23 @@ export async function fetchFixtureGrid() {
   return res.json();
 }
 
+export async function fetchTeams() {
+  const res = await fetch(`${API}/teams`);
+  if (!res.ok) throw new Error(`Failed to load teams (${res.status})`);
+  return res.json();
+}
+
+// Raw passthrough of every fixture this season (past and future) — used by
+// RivalryView.jsx's club-vs-club head-to-head to find the meeting(s) between
+// two specific clubs client-side, rather than a new server endpoint (matches
+// the project's "thin server" precedent elsewhere: Fixture Swing, the
+// manager-vs-manager side of Rivalry itself).
+export async function fetchFixturesRaw() {
+  const res = await fetch(`${API}/fixtures`);
+  if (!res.ok) throw new Error(`Failed to load fixtures (${res.status})`);
+  return res.json();
+}
+
 export async function fetchSquad(teamId, eventId) {
   const params = new URLSearchParams({ teamId: String(teamId) });
   if (eventId) params.set('eventId', String(eventId));

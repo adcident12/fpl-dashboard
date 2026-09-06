@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { fetchSquad } from './api.js';
+import { fetchSquad, fetchTeams, fetchFixturesRaw } from './api.js';
 import { useTeamId } from './useTeamId.js';
 import { TeamIdInput } from './TeamIdControls.jsx';
-import PitchView from './PitchView.jsx';
+import PitchView, { teamColor } from './PitchView.jsx';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
+import { fdrBucket, formatKickoff, isMatchday } from './FdrBadges.jsx';
 import { useLang } from './i18n.jsx';
 
 // The rival slot gets its own localStorage key so it doesn't clobber the
@@ -183,8 +184,187 @@ function Side({ label, teamId, setTeamId, data, error, loading, onLoad, t }) {
   );
 }
 
+// Every fixture between two specific clubs this season (usually 2 — home
+// leg + away leg — but computed generically rather than assumed, in case a
+// season is mid-way or has an unusual schedule). Raw FPL fixture fields
+// (team_h/team_a/etc.) straight from /api/fixtures, not buildData()'s
+// per-player nextFixtures shape — this is a club-vs-club lookup, not tied to
+// any one player.
+function clubMeetings(fixtures, idA, idB) {
+  return fixtures
+    .filter((f) => (f.team_h === idA && f.team_a === idB) || (f.team_h === idB && f.team_a === idA))
+    .sort((a, b) => a.event - b.event)
+    .map((f) => ({
+      id: f.id,
+      event: f.event,
+      kickoffTime: f.kickoff_time,
+      // Same finished/finished_provisional quirk as buildFixtureGrid()'s
+      // `done` — a fully-played match can sit at finished=false for up to
+      // ~1h while FPL's own confirmation catches up.
+      done: f.finished || f.finished_provisional,
+      homeTeamId: f.team_h,
+      awayTeamId: f.team_a,
+      homeScore: f.team_h_score,
+      awayScore: f.team_a_score,
+      homeDifficulty: f.team_h_difficulty,
+      awayDifficulty: f.team_a_difficulty,
+    }));
+}
+
+// Wins/draws for club A vs club B across only the meetings that have
+// actually finished — an upcoming or in-progress leg contributes nothing
+// yet (no score to judge).
+function seriesRecord(meetings, idA) {
+  let winsA = 0;
+  let winsB = 0;
+  let draws = 0;
+  for (const m of meetings) {
+    if (!m.done || m.homeScore == null || m.awayScore == null) continue;
+    const scoreA = m.homeTeamId === idA ? m.homeScore : m.awayScore;
+    const scoreB = m.homeTeamId === idA ? m.awayScore : m.homeScore;
+    if (scoreA > scoreB) winsA++;
+    else if (scoreB > scoreA) winsB++;
+    else draws++;
+  }
+  return { winsA, winsB, draws, played: winsA + winsB + draws };
+}
+
+function ClubAvatar({ shortName }) {
+  return (
+    <span
+      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-display font-bold text-white shrink-0"
+      style={{ background: teamColor(shortName) }}
+    >
+      {shortName}
+    </span>
+  );
+}
+
+function ClubSelect({ label, value, onChange, teams, otherValue, t }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted">
+      {label}
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{t('rivalry.selectClub')}</option>
+        {teams.map((tm) => (
+          <option key={tm.id} value={tm.id} disabled={String(tm.id) === otherValue}>
+            {tm.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function MeetingCard({ meeting, teamById, idA, t }) {
+  const home = teamById.get(meeting.homeTeamId);
+  const away = teamById.get(meeting.awayTeamId);
+  const matchday = isMatchday(meeting.kickoffTime) && !meeting.done;
+  const homeIsA = meeting.homeTeamId === idA;
+  return (
+    <div className={`bg-panel border border-line rounded-md p-3.5 shadow-sm flex items-center gap-3 flex-wrap${matchday ? ' matchday' : ''}`}>
+      <span className="font-display text-xs font-bold text-muted w-14 shrink-0">GW{meeting.event}</span>
+      <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+        <ClubAvatar shortName={home?.shortName ?? '?'} />
+        <span className={`text-sm ${homeIsA ? 'font-bold' : ''}`}>{home?.name ?? '?'}</span>
+        {meeting.done && meeting.homeScore != null ? (
+          <span className="font-display text-lg font-bold px-2">{meeting.homeScore}–{meeting.awayScore}</span>
+        ) : (
+          <span className="text-muted text-xs px-2">{t('rivalry.vs')}</span>
+        )}
+        <span className={`text-sm ${!homeIsA ? 'font-bold' : ''}`}>{away?.name ?? '?'}</span>
+        <ClubAvatar shortName={away?.shortName ?? '?'} />
+      </div>
+      <div className="text-xs text-muted shrink-0">
+        {meeting.done ? t('rivalry.final') : formatKickoff(meeting.kickoffTime, t)}
+      </div>
+      <div className="flex gap-1 shrink-0">
+        <Tooltip content={t('rivalry.fdrForTitle', { team: home?.shortName ?? '?' })}>
+          <span className={`fdr-badge fdr-${fdrBucket(meeting.homeDifficulty)}`}>{meeting.homeDifficulty}</span>
+        </Tooltip>
+        <Tooltip content={t('rivalry.fdrForTitle', { team: away?.shortName ?? '?' })}>
+          <span className={`fdr-badge fdr-${fdrBucket(meeting.awayDifficulty)}`}>{meeting.awayDifficulty}</span>
+        </Tooltip>
+      </div>
+    </div>
+  );
+}
+
+// Club-vs-club H2H — user-picked clubs (not derived from anyone's squad),
+// sourced from the season's actual fixture list rather than a new server
+// endpoint (/api/teams + /api/fixtures already exist and this is a pure
+// client-side filter/join over them, same "thin server" precedent as
+// Fixture Swing and the manager-vs-manager side of this same tab).
+function ClubH2H({ t }) {
+  const [teams, setTeams] = useState(null);
+  const [fixtures, setFixtures] = useState(null);
+  const [error, setError] = useState(null);
+  const [clubA, setClubA] = useState('');
+  const [clubB, setClubB] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([fetchTeams(), fetchFixturesRaw()])
+      .then(([teamsRes, fixturesRes]) => {
+        if (!alive) return;
+        setTeams(teamsRes.teams);
+        setFixtures(fixturesRes);
+      })
+      .catch((e) => alive && setError(e.message));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (error) return <div className="py-10 text-center text-[#ff8a80]">{t('status.error', { message: error })}</div>;
+  if (!teams || !fixtures) return <LoadingState label={t('status.loading')} />;
+
+  const teamById = new Map(teams.map((tm) => [tm.id, tm]));
+  const idA = clubA ? Number(clubA) : null;
+  const idB = clubB ? Number(clubB) : null;
+  const bothPicked = idA != null && idB != null && idA !== idB;
+  const meetings = bothPicked ? clubMeetings(fixtures, idA, idB) : [];
+  const record = bothPicked ? seriesRecord(meetings, idA) : null;
+
+  return (
+    <div>
+      <div className="filters flex flex-wrap items-center gap-4 bg-panel border border-line rounded-md px-3.5 py-3 mb-3.5 shadow-sm max-sm:flex-col max-sm:items-stretch">
+        <ClubSelect label={t('rivalry.clubA')} value={clubA} onChange={setClubA} teams={teams} otherValue={clubB} t={t} />
+        <ClubSelect label={t('rivalry.clubB')} value={clubB} onChange={setClubB} teams={teams} otherValue={clubA} t={t} />
+      </div>
+
+      {!bothPicked && <div className="py-10 text-center text-muted">{t('rivalry.pickBothClubs')}</div>}
+
+      {bothPicked && record && (
+        <div className="bg-panel border border-line rounded-md p-4 mb-3.5 shadow-sm text-center">
+          {record.played === 0 ? (
+            <div className="text-muted">{t('rivalry.notPlayedYet')}</div>
+          ) : (
+            <div className="font-display text-lg font-bold">
+              {teamById.get(idA)?.name} {record.winsA} – {record.draws} – {record.winsB} {teamById.get(idB)?.name}
+            </div>
+          )}
+        </div>
+      )}
+
+      {bothPicked && meetings.length === 0 && (
+        <div className="py-10 text-center text-muted">{t('rivalry.noMeetings')}</div>
+      )}
+
+      {bothPicked && meetings.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          {meetings.map((m) => (
+            <MeetingCard key={m.id} meeting={m} teamById={teamById} idA={idA} t={t} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RivalryView() {
   const { t, lang } = useLang();
+  const [mode, setMode] = useState('managers');
   const [teamIdA, setTeamIdA] = useTeamId();
   const [teamIdB, setTeamIdB] = useTeamId(RIVAL_STORAGE_KEY);
   const [dataA, setDataA] = useState(null);
@@ -250,34 +430,58 @@ export default function RivalryView() {
   return (
     <div>
       <div className="bg-panel border border-line rounded-md p-4 mb-3.5 shadow-sm">
-        <h2 className="m-0 mb-2 font-display text-xl font-bold tracking-[0.01em]">{t('rivalry.title')}</h2>
-        <div className="text-[13px] text-muted">{t('rivalry.note')}</div>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
+          <h2 className="m-0 font-display text-xl font-bold tracking-[0.01em]">{t('rivalry.title')}</h2>
+          <div className="inline-flex gap-1 bg-panel-2 border border-line rounded-full p-[3px] shrink-0">
+            <button
+              type="button"
+              onClick={() => setMode('managers')}
+              className={`font-display text-[11px] font-bold tracking-[0.02em] uppercase px-3 py-1 rounded-full cursor-pointer transition ${mode === 'managers' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+            >
+              {t('rivalry.modeManagers')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('clubs')}
+              className={`font-display text-[11px] font-bold tracking-[0.02em] uppercase px-3 py-1 rounded-full cursor-pointer transition ${mode === 'clubs' ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text'}`}
+            >
+              {t('rivalry.modeClubs')}
+            </button>
+          </div>
+        </div>
+        <div className="text-[13px] text-muted">{mode === 'managers' ? t('rivalry.note') : t('rivalry.clubNote')}</div>
       </div>
 
-      {bothLoaded && <BanterCard key={banterText} category={banterCat} text={banterText} t={t} />}
+      {mode === 'managers' ? (
+        <>
+          {bothLoaded && <BanterCard key={banterText} category={banterCat} text={banterText} t={t} />}
 
-      <div className="flex gap-4 flex-wrap max-sm:flex-col">
-        <Side
-          label={t('rivalry.yourTeam')}
-          teamId={teamIdA}
-          setTeamId={setTeamIdA}
-          data={dataA}
-          error={errorA}
-          loading={loadingA}
-          onLoad={loadA}
-          t={t}
-        />
-        <Side
-          label={t('rivalry.rivalTeam')}
-          teamId={teamIdB}
-          setTeamId={setTeamIdB}
-          data={dataB}
-          error={errorB}
-          loading={loadingB}
-          onLoad={loadB}
-          t={t}
-        />
-      </div>
+          <div className="flex gap-4 flex-wrap max-sm:flex-col">
+            <Side
+              label={t('rivalry.yourTeam')}
+              teamId={teamIdA}
+              setTeamId={setTeamIdA}
+              data={dataA}
+              error={errorA}
+              loading={loadingA}
+              onLoad={loadA}
+              t={t}
+            />
+            <Side
+              label={t('rivalry.rivalTeam')}
+              teamId={teamIdB}
+              setTeamId={setTeamIdB}
+              data={dataB}
+              error={errorB}
+              loading={loadingB}
+              onLoad={loadB}
+              t={t}
+            />
+          </div>
+        </>
+      ) : (
+        <ClubH2H t={t} />
+      )}
     </div>
   );
 }

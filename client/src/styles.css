@@ -207,30 +207,18 @@ table.players {
 .fdr-easy { background: var(--color-easy); }
 .fdr-med { background: var(--color-med); color: #1a1a1a; }
 .fdr-hard { background: var(--color-hard); }
-/* Same "today" border beam as FixtureGrid.jsx's .cell.matchday (see that
-   rule, further down, for the full explanation and the shared
-   @property/@keyframes it also uses) — a smaller inset/padding here since
-   these pills are much smaller than a grid cell, so the ring stays
-   proportional instead of swallowing the badge. Used wherever a player's
-   next-fixture badge is shown (Players table, My Squad, Suggestions,
-   Fixture Swing) via the one shared FdrBadges.jsx component, so "this
-   player's next match is today" is visible everywhere, not just the
-   Fixtures tab's own grid. */
-.fdr-badge.matchday {
-  position: relative;
-}
+/* "Today" border beam — see the generic `.matchday` rule further down
+   (Fixture grid section) for the full explanation and the shared
+   @property/@keyframes it uses. Overrides the default ring geometry with a
+   smaller inset/padding here since these pills are much smaller than a grid
+   cell or a meeting card, so the ring stays proportional instead of
+   swallowing the badge. Used wherever a player's next-fixture badge is
+   shown (Players table, My Squad, Suggestions, Fixture Swing) via the one
+   shared FdrBadges.jsx component, so "this player's next match is today" is
+   visible everywhere, not just the Fixtures tab's own grid. */
 .fdr-badge.matchday::after {
-  content: '';
-  position: absolute;
   inset: -1.5px;
-  border-radius: inherit;
   padding: 1.5px;
-  background: conic-gradient(from var(--matchday-angle), transparent 0deg, transparent 260deg, #fff 300deg, var(--color-accent) 330deg, transparent 360deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: matchday-spin 2.5s linear infinite;
-  pointer-events: none;
 }
 
 /* .tabs / .tab removed — App.jsx and SuggestionsView.jsx's pitch-mode toggle
@@ -310,24 +298,29 @@ a:focus-visible {
   white-space: nowrap;
 }
 /* Animated "border beam" for a fixture happening today (not yet finished) —
-   a rotating highlight sweeping around the cell's perimeter so a fan's eye
-   is drawn straight to "this one's on today" without reading every kickoff
-   time. @property lets the browser interpolate --matchday-angle smoothly
-   frame to frame (a plain custom property can't be animated — it would
-   just jump between values with no in-between frames); a browser without
-   @property support keeps the angle at its initial value, so the effect
-   degrades to a static highlighted ring instead of breaking anything.
-   Respects the app-wide prefers-reduced-motion override at the top of this
-   file automatically (animation: none !important). */
+   a rotating highlight sweeping around an element's perimeter so a fan's
+   eye is drawn straight to "this one's on today" without reading every
+   kickoff time. Generic `.matchday` class (not scoped to `.cell`) since
+   it's applied to several differently-sized elements: FixtureGrid.jsx's
+   grid cells, FdrBadges.jsx's small pills (smaller inset/padding override,
+   see that rule above), and RivalryView.jsx's club-vs-club meeting cards —
+   one shared mechanism instead of three near-duplicate rules. @property
+   lets the browser interpolate --matchday-angle smoothly frame to frame (a
+   plain custom property can't be animated — it would just jump between
+   values with no in-between frames); a browser without @property support
+   keeps the angle at its initial value, so the effect degrades to a static
+   highlighted ring instead of breaking anything. Respects the app-wide
+   prefers-reduced-motion override at the top of this file automatically
+   (animation: none !important). */
 @property --matchday-angle {
   syntax: '<angle>';
   initial-value: 0deg;
   inherits: false;
 }
-.cell.matchday {
+.matchday {
   position: relative;
 }
-.cell.matchday::after {
+.matchday::after {
   content: '';
   position: absolute;
   inset: -2px;
