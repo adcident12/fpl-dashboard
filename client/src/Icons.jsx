@@ -65,6 +65,16 @@ export function BonusIcon(props) {
   );
 }
 
+export function SetPiecesIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function GuideIcon(props) {
   return (
     <svg {...base} {...props}>

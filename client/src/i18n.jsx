@@ -14,6 +14,7 @@ const STRINGS = {
     'nav.chips': 'Chips',
     'nav.bonus': 'Live Bonus',
     'nav.rivalry': 'Rivalry',
+    'nav.setpieces': 'Set Pieces',
     'nav.guide': 'Guide',
     'meta.eventPlayers': '{{event}} · {{count}} players',
     'meta.updated': 'Updated {{time}}',
@@ -204,6 +205,14 @@ const STRINGS = {
     'rivalry.win': '{{winner}} takes the week by {{margin}} pts.',
     'rivalry.close': '{{winner}} just edges it by {{margin}} pt(s) — nail-biter.',
 
+    'setpieces.title': 'Set-Piece Takers',
+    'setpieces.note': "Each club's designated penalty, free-kick, and corner takers, in order (1 = first choice) — straight from the FPL API. Informational only, like the penalty badge elsewhere in the app: not weighted into any score, since who actually takes a given set piece on the day is too unpredictable to model.",
+    'setpieces.loading': 'Loading set-piece takers…',
+    'setpieces.penalties': 'Penalties',
+    'setpieces.freeKicks': 'Free-kicks',
+    'setpieces.corners': 'Corners',
+    'setpieces.none': '—',
+
     'lang.toggle': 'ไทย',
   },
   th: {
@@ -215,6 +224,7 @@ const STRINGS = {
     'nav.chips': 'Chip',
     'nav.bonus': 'โบนัสสด',
     'nav.rivalry': 'ศึกคู่แข่ง',
+    'nav.setpieces': 'ลูกตั้งเตะ',
     'nav.guide': 'คู่มือ',
     'meta.eventPlayers': '{{event}} · นักเตะ {{count}} คน',
     'meta.updated': 'อัปเดตล่าสุด {{time}}',
@@ -404,6 +414,14 @@ const STRINGS = {
     'rivalry.blowout': '{{winner}} ทิ้งห่างสัปดาห์นี้ถึง {{margin}} แต้ม โหดจริง',
     'rivalry.win': '{{winner}} ชนะสัปดาห์นี้ด้วยส่วนต่าง {{margin}} แต้ม',
     'rivalry.close': '{{winner}} เฉือนชนะแค่ {{margin}} แต้ม — สูสีสุดๆ',
+
+    'setpieces.title': 'ผู้เตะลูกตั้งเตะ',
+    'setpieces.note': 'ผู้เตะจุดโทษ, ฟรีคิก และคอร์เนอร์อันดับต้นๆ ของแต่ละทีม (1 = ตัวเลือกแรก) — ข้อมูลตรงจาก FPL API ใช้เพื่อดูข้อมูลเท่านั้น เหมือน badge จุดโทษในหน้าอื่นๆ ของแอป ไม่ถูกเอาไปคิดคะแนน เพราะคาดเดายากว่าใครจะได้เตะจริงในแต่ละนัด',
+    'setpieces.loading': 'กำลังโหลดข้อมูลผู้เตะลูกตั้งเตะ…',
+    'setpieces.penalties': 'จุดโทษ',
+    'setpieces.freeKicks': 'ฟรีคิก',
+    'setpieces.corners': 'คอร์เนอร์',
+    'setpieces.none': '—',
 
     'lang.toggle': 'EN',
   },

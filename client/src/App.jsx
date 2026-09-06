@@ -6,12 +6,13 @@ import SuggestionsView from './SuggestionsView.jsx';
 import ChipsView from './ChipsView.jsx';
 import BonusView from './BonusView.jsx';
 import RivalryView from './RivalryView.jsx';
+import SetPiecesView from './SetPiecesView.jsx';
 import GuideView from './GuideView.jsx';
 import FdrBadges from './FdrBadges.jsx';
 import Logo from './Logo.jsx';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
-import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, BonusIcon, RivalryIcon, GuideIcon } from './Icons.jsx';
+import { PlayersIcon, FixturesIcon, SquadIcon, SuggestionsIcon, ChipsIcon, BonusIcon, RivalryIcon, SetPiecesIcon, GuideIcon } from './Icons.jsx';
 import { useLang } from './i18n.jsx';
 
 // Relative "how long ago" for the data-freshness indicator. Recomputed on
@@ -50,6 +51,7 @@ const TAB_VIEWS = {
   chips: <ChipsView />,
   bonus: <BonusView />,
   rivalry: <RivalryView />,
+  setpieces: <SetPiecesView />,
   guide: <GuideView />,
 };
 
@@ -61,6 +63,7 @@ const TABS = [
   { key: 'chips', labelKey: 'nav.chips', Icon: ChipsIcon },
   { key: 'bonus', labelKey: 'nav.bonus', Icon: BonusIcon },
   { key: 'rivalry', labelKey: 'nav.rivalry', Icon: RivalryIcon },
+  { key: 'setpieces', labelKey: 'nav.setpieces', Icon: SetPiecesIcon },
   { key: 'guide', labelKey: 'nav.guide', Icon: GuideIcon },
 ];
 

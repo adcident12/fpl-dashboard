@@ -115,6 +115,11 @@ export async function buildData() {
       // all. Shown as a badge only, never weighted into the score — how many
       // penalties a team wins is too unpredictable to model as a formula input.
       penaltyOrder: el.penalties_order,
+      // Same "1 = first choice, null = not on the list" shape as penaltyOrder,
+      // for the other two set-piece types — fan feature only (Set Pieces tab),
+      // not weighted into scoring for the same reason penalties aren't.
+      freeKickOrder: el.direct_freekicks_order,
+      cornerOrder: el.corners_and_indirect_freekicks_order,
       status: el.status,
       news: el.news,
       transfersIn: el.transfers_in,

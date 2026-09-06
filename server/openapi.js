@@ -55,6 +55,8 @@ const player = {
     minutes: { type: 'integer', description: 'Season-to-date total minutes played.' },
     availabilityPct: { type: 'integer', minimum: 0, maximum: 100, description: 'Chance of playing the next relevant gameweek. 100 = no fitness doubt.' },
     penaltyOrder: { type: 'integer', nullable: true, description: '1 = club\'s first-choice penalty taker; null = not on the list.' },
+    freeKickOrder: { type: 'integer', nullable: true, description: '1 = club\'s first-choice direct free-kick taker; null = not on the list.' },
+    cornerOrder: { type: 'integer', nullable: true, description: '1 = club\'s first-choice corner/indirect free-kick taker; null = not on the list.' },
     status: { type: 'string', enum: ['a', 'd', 'i', 's', 'u'], description: 'a=available, d=doubt, i=injured, s=suspended, u=unavailable.' },
     news: { type: 'string' },
     transfersIn: { type: 'integer' },
