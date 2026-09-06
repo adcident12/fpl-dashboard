@@ -207,6 +207,31 @@ table.players {
 .fdr-easy { background: var(--color-easy); }
 .fdr-med { background: var(--color-med); color: #1a1a1a; }
 .fdr-hard { background: var(--color-hard); }
+/* Same "today" border beam as FixtureGrid.jsx's .cell.matchday (see that
+   rule, further down, for the full explanation and the shared
+   @property/@keyframes it also uses) — a smaller inset/padding here since
+   these pills are much smaller than a grid cell, so the ring stays
+   proportional instead of swallowing the badge. Used wherever a player's
+   next-fixture badge is shown (Players table, My Squad, Suggestions,
+   Fixture Swing) via the one shared FdrBadges.jsx component, so "this
+   player's next match is today" is visible everywhere, not just the
+   Fixtures tab's own grid. */
+.fdr-badge.matchday {
+  position: relative;
+}
+.fdr-badge.matchday::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--matchday-angle), transparent 0deg, transparent 260deg, #fff 300deg, var(--color-accent) 330deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: matchday-spin 2.5s linear infinite;
+  pointer-events: none;
+}
 
 /* .tabs / .tab removed — App.jsx and SuggestionsView.jsx's pitch-mode toggle
    now build the same look with Tailwind utilities (see those files). */

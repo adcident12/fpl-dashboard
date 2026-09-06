@@ -38,6 +38,26 @@ export function formatKickoffShort(iso, t) {
   return new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
+// True when kickoffTime falls on today's date in the viewer's own local
+// timezone (matching how formatKickoff already displays it) — compared by
+// calendar date, not a 24h window, so a fixture stays "today" all day
+// regardless of what time it kicks off. Every fixture object this app ever
+// builds (buildData()'s nextFixtures, getSquadContext()'s
+// eventFixturesByTeam) is already current-gameweek-or-later by construction,
+// so unlike FixtureGrid.jsx's own cells there's no separate `done` flag to
+// check here — a fixture reaching this component is inherently upcoming or
+// in-progress, never one already fully in the past.
+export function isMatchday(kickoffTime) {
+  if (!kickoffTime) return false;
+  const kickoff = new Date(kickoffTime);
+  const now = new Date();
+  return (
+    kickoff.getFullYear() === now.getFullYear() &&
+    kickoff.getMonth() === now.getMonth() &&
+    kickoff.getDate() === now.getDate()
+  );
+}
+
 // Shared by the Players table, My Squad, and Suggestions (transfer/captain
 // candidates + quick squad scan) — one fixture-difficulty badge row per player.
 export default function FdrBadges({ fixtures }) {
@@ -47,7 +67,8 @@ export default function FdrBadges({ fixtures }) {
     <span className="inline-flex gap-1">
       {fixtures.map((f) => {
         const bucket = fdrBucket(f.difficulty);
-        const title = t('fdr.tooltip', {
+        const matchday = isMatchday(f.kickoffTime);
+        const baseTitle = t('fdr.tooltip', {
           event: f.event,
           opponent: f.opponentName,
           side: f.home ? t('fdr.home') : t('fdr.away'),
@@ -55,13 +76,14 @@ export default function FdrBadges({ fixtures }) {
           fdr: f.difficulty,
           label: t(FDR_LABEL_KEY[bucket]),
         });
+        const title = matchday ? `${t('fixtures.today')} — ${baseTitle}` : baseTitle;
         return (
           // event alone isn't a unique key here: a Double Gameweek's two legs
           // share the same event id (captain suggestions now pass the target
           // gameweek's actual fixtures, which can be 2 for a DGW) — pair it
           // with opponentId, which always differs between the two legs.
           <Tooltip key={`${f.event}-${f.opponentId}`} content={title}>
-            <span className={`fdr-badge fdr-${bucket}`}>{f.opponentShort}</span>
+            <span className={`fdr-badge fdr-${bucket}${matchday ? ' matchday' : ''}`}>{f.opponentShort}</span>
           </Tooltip>
         );
       })}

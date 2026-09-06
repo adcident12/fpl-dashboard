@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchFixtureGrid } from './api.js';
 import LoadingState from './LoadingSpinner.jsx';
 import Tooltip from './Tooltip.jsx';
-import FdrBadges, { fdrBucket, formatKickoff, formatKickoffShort } from './FdrBadges.jsx';
+import FdrBadges, { fdrBucket, formatKickoff, formatKickoffShort, isMatchday } from './FdrBadges.jsx';
 import { teamColor } from './PitchView.jsx';
 import { useLang } from './i18n.jsx';
 
@@ -19,23 +19,6 @@ import { useLang } from './i18n.jsx';
 // grid is scannable at a glance.
 const FDR_BG = { 1: '#1b5e20', 2: '#558b2f', 3: '#f9a825', 4: '#ef6c00', 5: '#b71c1c' };
 const FDR_LABEL_KEY = { 1: 'fixtures.fdr1', 2: 'fixtures.fdr2', 3: 'fixtures.fdr3', 4: 'fixtures.fdr4', 5: 'fixtures.fdr5' };
-
-// True when kickoffTime falls on today's date in the viewer's own local
-// timezone (matching how formatKickoff already displays it) — compared by
-// calendar date, not a 24h window, so a fixture stays "today" all day
-// regardless of what time it kicks off. A finished match doesn't need the
-// attention-grabbing treatment anymore (nothing left to watch for), so
-// callers also check `!f.done` before applying it.
-function isMatchday(kickoffTime) {
-  if (!kickoffTime) return false;
-  const kickoff = new Date(kickoffTime);
-  const now = new Date();
-  return (
-    kickoff.getFullYear() === now.getFullYear() &&
-    kickoff.getMonth() === now.getMonth() &&
-    kickoff.getDate() === now.getDate()
-  );
-}
 
 // A cell now holds an ARRAY of fixtures (0 = blank gameweek, 1 = normal,
 // 2+ = double gameweek) — see buildFixtureGrid() in server/fpl.js.
