@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchPlayers } from './api.js';
 import LoadingState from './LoadingSpinner.jsx';
-import Tooltip from './Tooltip.jsx';
 import { useLang } from './i18n.jsx';
 
 // Groups players by team and, within each team, into the 3 set-piece order
@@ -28,18 +27,23 @@ function groupByTeam(players, teams) {
 
 function TakerList({ title, players, orderKey, t }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="text-[10px] text-muted uppercase tracking-[0.04em] font-semibold mb-1">{title}</div>
       {players.length === 0 ? (
         <div className="text-muted text-sm">{t('setpieces.none')}</div>
       ) : (
-        <ol className="list-none p-0 m-0 flex flex-col gap-0.5">
+        <ol className="list-none p-0 m-0 flex flex-col gap-1">
           {players.map((p) => (
             <li key={p.id} className="text-sm flex gap-1.5 min-w-0">
-              <span className="text-muted w-3.5 text-right shrink-0">{p[orderKey]}</span>
-              <Tooltip content={p.name} className="flex-1 min-w-0 truncate block">
+              {/* First choice (order 1) picked out in accent — the one
+                  detail a fan actually plans around, everyone else is just
+                  "who's next in line" reference info. */}
+              <span className={`w-3.5 text-right shrink-0 ${p[orderKey] === 1 ? 'text-accent font-bold' : 'text-muted'}`}>
+                {p[orderKey]}
+              </span>
+              <span className={`flex-1 min-w-0 break-words leading-snug ${p[orderKey] === 1 ? 'font-semibold text-text' : 'text-muted'}`}>
                 {p.name}
-              </Tooltip>
+              </span>
             </li>
           ))}
         </ol>
@@ -50,9 +54,9 @@ function TakerList({ title, players, orderKey, t }) {
 
 function TeamCard({ entry, t }) {
   return (
-    <div className="bg-panel border border-line rounded-md p-3.5 shadow-sm">
+    <div className="bg-panel border border-line rounded-md p-3.5 shadow-sm transition-shadow hover:shadow-md">
       <h3 className="font-display text-base font-bold mb-2.5">{entry.team.name}</h3>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2.5">
         <TakerList title={t('setpieces.penalties')} players={entry.penalties} orderKey="penaltyOrder" t={t} />
         <TakerList title={t('setpieces.freeKicks')} players={entry.freeKicks} orderKey="freeKickOrder" t={t} />
         <TakerList title={t('setpieces.corners')} players={entry.corners} orderKey="cornerOrder" t={t} />
@@ -87,7 +91,7 @@ export default function SetPiecesView() {
         <h2 className="m-0 mb-2 font-display text-xl font-bold tracking-[0.01em]">{t('setpieces.title')}</h2>
         <div className="text-[13px] text-muted">{t('setpieces.note')}</div>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
         {teams.map((entry) => (
           <TeamCard key={entry.team.id} entry={entry} t={t} />
         ))}

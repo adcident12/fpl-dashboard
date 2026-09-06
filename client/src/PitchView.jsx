@@ -15,7 +15,10 @@ import { useLang } from './i18n.jsx';
 
 // Deterministic team color so every team gets a stable, distinct jersey color
 // without maintaining a 20-team lookup table (no team-crest/kit assets in this app).
-function teamColor(teamShort) {
+// Exported so other views (e.g. DreamTeamView's "star of the gameweek" callout)
+// can reuse the same color a player's jersey would get here, without a second
+// hash function drifting out of sync with this one.
+export function teamColor(teamShort) {
   let hash = 0;
   for (let i = 0; i < teamShort.length; i++) {
     hash = (hash * 31 + teamShort.charCodeAt(i)) >>> 0;

@@ -219,6 +219,7 @@ const STRINGS = {
     'dreamTeam.note': "FPL's own official Team of the Week for this gameweek (its `in_dreamteam` flag) — not a self-computed best XI, straight from the source.",
     'dreamTeam.totalPoints': 'combined points',
     'dreamTeam.rankingTitle': 'Ranked by points',
+    'dreamTeam.starOfWeek': 'Star of the gameweek',
 
     'lang.toggle': 'ไทย',
   },
@@ -436,6 +437,7 @@ const STRINGS = {
     'dreamTeam.note': 'ทีมยอดเยี่ยมประจำสัปดาห์อย่างเป็นทางการของ FPL เอง (จาก flag `in_dreamteam`) ไม่ใช่การคำนวณ 11 ตัวจริงที่ดีที่สุดเอง แต่มาจากแหล่งข้อมูลโดยตรง',
     'dreamTeam.totalPoints': 'แต้มรวม',
     'dreamTeam.rankingTitle': 'จัดอันดับตามแต้ม',
+    'dreamTeam.starOfWeek': 'ดาวเด่นประจำสัปดาห์',
 
     'lang.toggle': 'EN',
   },

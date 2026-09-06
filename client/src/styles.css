@@ -781,6 +781,24 @@ table.scan .arrow-cell {
 .bonus-live-tag.live {
   background: var(--color-hard);
   color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* A pulsing dot next to LIVE (not FINAL) reads as "this is actually moving
+   right now" — the same shorthand every live-sports UI uses. Respects the
+   app-wide prefers-reduced-motion override above (animation: none !important). */
+.bonus-live-tag.live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: bonus-pulse 1.4s ease-in-out infinite;
+}
+@keyframes bonus-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.7); }
 }
 .bonus-live-tag.final {
   background: var(--color-panel-3);

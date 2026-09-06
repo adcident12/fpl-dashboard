@@ -115,21 +115,37 @@ function computeFixtureSwing(data) {
     .sort((a, b) => (a.avgFDR ?? 99) - (b.avgFDR ?? 99));
 }
 
+// Top/bottom 3 get a color-coded accent border — same green/red vocabulary
+// as the FDR badges themselves, so "easiest run" / "hardest run" reads at a
+// glance instead of requiring a read of the numbers.
+function swingAccent(rank, total) {
+  if (rank < 3) return 'border-l-easy';
+  if (rank >= total - 3) return 'border-l-hard';
+  return 'border-l-transparent';
+}
+
 function FixtureSwing({ data, t }) {
   const ranked = computeFixtureSwing(data);
   return (
     <div className="bg-panel border border-line rounded-md p-3.5 mb-3.5 shadow-sm">
       <h3 className="m-0 mb-1 font-display text-base font-bold tracking-[0.01em]">{t('fixtures.swingTitle')}</h3>
       <div className="text-[13px] text-muted mb-3">{t('fixtures.swingNote')}</div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         {ranked.map((team, i) => (
-          <div key={team.id} className="flex items-center gap-3 flex-wrap">
-            <span className="text-muted text-xs w-5 shrink-0 text-right">{i + 1}</span>
-            <span className="font-display text-[13px] font-bold w-[140px] shrink-0 truncate">{team.name}</span>
-            <span className="text-xs text-muted w-16 shrink-0">
-              {t('fixtures.swingAvgFdr')} {team.avgFDR != null ? team.avgFDR.toFixed(1) : '—'}
-            </span>
-            <FdrBadges fixtures={team.fixtures} />
+          <div
+            key={team.id}
+            className={`flex items-center gap-3 border-l-[3px] pl-2.5 py-1.5 rounded-sm transition-colors hover:bg-panel-2 max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:py-2 ${swingAccent(i, ranked.length)}`}
+          >
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-muted text-xs w-5 shrink-0 text-right">{i + 1}</span>
+              <span className="font-display text-[13px] font-bold w-[120px] shrink-0 truncate">{team.name}</span>
+              <span className="text-xs text-muted w-16 shrink-0">
+                {t('fixtures.swingAvgFdr')} {team.avgFDR != null ? team.avgFDR.toFixed(1) : '—'}
+              </span>
+            </div>
+            <div className="max-sm:pl-8">
+              <FdrBadges fixtures={team.fixtures} />
+            </div>
           </div>
         ))}
       </div>
